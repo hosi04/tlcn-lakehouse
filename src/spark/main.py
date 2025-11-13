@@ -1,13 +1,15 @@
 from config.spark_config import SparkConnect
 from dotenv import load_dotenv
 import os
+import glob
+
 def main():
     load_dotenv()
     jar_packages = [
         "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1",
         "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.0",
         "software.amazon.awssdk:s3:2.20.125",
-        "org.apache.hadoop:hadoop-aws:3.3.6"
+        "org.apache.hadoop:hadoop-aws:3.3.1"
     ]
 
     spark_conf = {
@@ -50,28 +52,22 @@ def main():
     ).spark
     print("Spark Session have been created successfully.")
 
-    kafka_stream_df = (
-        spark.readStream
-        .format("kafka")
-        .option("kafka.bootstrap.servers", os.getenv("KAFKA_BROKERS"))
-        .option("subscribe", os.getenv("KAFKA_TOPIC"))
-        .option("startingOffsets", "earliest")
-        .load()
-    )
+    csv_folder = "./data/"
+    csv_files = glob.glob(os.path.join(csv_folder, "*.csv"))
+    print(f"Found {len(csv_files)} CSV files.")
 
-    raw_data_df = kafka_stream_df.selectExpr("CAST(value AS STRING) AS raw_json")
+    spark.sql("CREATE NAMESPACE IF NOT EXISTS iceberg.bronze")
 
-    query = (
-        raw_data_df.writeStream
-        .format("iceberg")
-        .outputMode("append")
-        .trigger(processingTime="5 seconds")
-        .option("checkpointLocation", os.getenv("CHECKPOINT_LOCATION"))
-        .toTable(os.getenv("ICEBERG_TABLE_NAME"))
-    )
-    print("Start streaming......")
+    for file_path in csv_files:
+        table_name = os.path.splitext(os.path.basename(file_path))[0]
+        full_table_name = f"iceberg.bronze.{table_name}"
+        df = spark.read.option("header", "true").option("inferSchema", "true").csv(file_path)
+        df.write.format("iceberg").mode("overwrite").saveAsTable(full_table_name)
+        print(f"Data from {file_path} written to {full_table_name} ({df.count()} rows)")
 
-    query.awaitTermination()
+    print("All CSV files have been uploaded to Iceberg successfully.")
+
+    spark.stop()
 
 if __name__ == "__main__":
     main()
