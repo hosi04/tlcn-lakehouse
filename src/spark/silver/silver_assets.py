@@ -4,25 +4,11 @@ import os
 from pyspark.sql.functions import col, round as spark_round
 from pyspark.sql import DataFrame
 import logging
-from minio import Minio
 
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def create_bucket_if_not_exists(bucket_name: str):
-    minio_client = Minio(
-        endpoint=os.getenv("MINIO_ENDPOINT"),
-        access_key=os.getenv("MINIO_ACCESS_KEY"),
-        secret_key=os.getenv("MINIO_SECRET_KEY"),
-        secure=False
-    )
-    if not minio_client.bucket_exists(bucket_name=bucket_name):
-        minio_client.make_bucket(bucket_name=bucket_name)
-        print(f"Bucket '{bucket_name}' created successfully.")
-    else:
-        print(f"Bucket '{bucket_name}' already exists.")
 
 def init_spark():
     jar_packages = [
@@ -63,7 +49,7 @@ def init_spark():
         "spark.sql.iceberg.vectorization.enabled": "false",
     }
     spark = SparkConnect(
-        app_name="Bronze Ingest",
+        app_name="Sliver Ingest",
         master_url="local[*]",
         executor_cores=2,
         executor_memory="4g",
@@ -84,26 +70,32 @@ def read_from_iceberg(spark, table_name: str, namespace="iceberg.bronze") -> Dat
 
 
 def write_to_iceberg(spark, df: DataFrame, table_name: str, namespace="iceberg.silver"):
-    """Write data to Iceberg silver layer"""
+    """Write a Spark DataFrame to an Iceberg table in the Silver layer."""
     full_table_name = f"{namespace}.{table_name}"
     col_count = len(df.columns)
+
+    logger.info(f"Writing to {full_table_name} ({col_count} columns)")
     
-    logger.info(f"Ghi vào {full_table_name} ({col_count} cột)")
-    df.write.format("iceberg").mode("overwrite").saveAsTable(full_table_name)
+    df.write \
+        .format("iceberg") \
+        .mode("overwrite") \
+        .saveAsTable(full_table_name)
 
     try:
         row_count = spark.table(full_table_name).count()
     except Exception as e:
-        logger.warning(f"Không thể lấy row_count: {e}")
+        logger.warning(f"Unable to fetch row_count for {full_table_name}: {e}")
         row_count = -1
-    
-    logger.info(f"Ghi thành công vào {full_table_name}")
+
+    logger.info(f"Successfully wrote data to {full_table_name}")
+
     return {
         "table": table_name,
         "row_count": row_count,
         "column_count": col_count,
         "columns": df.columns,
     }
+
 
 
 def silver_cleaned_customer(spark):
@@ -226,7 +218,6 @@ def silver_cleaned_geolocation(spark):
 if __name__ == "__main__":
     load_dotenv()
     spark = init_spark()
-    create_bucket_if_not_exists("lakehouse")
 
     spark.sql("CREATE NAMESPACE IF NOT EXISTS iceberg.silver")
     
