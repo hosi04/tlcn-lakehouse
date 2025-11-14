@@ -1,7 +1,7 @@
 from config.spark_config import SparkConnect
 from dotenv import load_dotenv
 import os
-from pyspark.sql.functions import col, round as spark_round
+from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, max as spark_max, count
 from pyspark.sql import DataFrame
 import logging
 
@@ -149,24 +149,41 @@ def silver_cleaned_order_item(spark):
 
 
 def silver_cleaned_payment(spark):
-    """Clean and process payment data"""
+    """Clean and process payment data - AGGREGATE by order_id"""
     df = read_from_iceberg(spark, "olist_order_payments_dataset")
     df = df.withColumn("payment_value", spark_round(col("payment_value"), 2).cast("double"))
     df = df.withColumn("payment_installments", col("payment_installments").cast("integer"))
     df = df.na.drop()
-    df = df.dropDuplicates()
-    metadata = write_to_iceberg(spark, df, "payments")
-    return df, metadata
+    
+    df_agg = df.groupBy("order_id").agg(
+        spark_sum("payment_value").alias("payment_value"),
+        spark_max("payment_installments").alias("payment_installments"),
+        first("payment_type").alias("payment_type"),
+        first("payment_sequential").alias("payment_sequential"),
+        count("*").alias("num_payments")
+    )
+    
+    metadata = write_to_iceberg(spark, df_agg, "payments")
+    logger.info(f"Payments: {metadata['row_count']} rows (aggregated from multiple payment methods)")
+    return df_agg, metadata
 
 
 def silver_cleaned_order_review(spark):
-    """Clean and process order review data"""
+    """Clean and process order review data - AGGREGATE by order_id"""
     df = read_from_iceberg(spark, "olist_order_reviews_dataset")
     df = df.drop("review_comment_title")
     df = df.na.drop()
-    df = df.dropDuplicates()
-    metadata = write_to_iceberg(spark, df, "order_reviews")
-    return df, metadata
+    
+    df_agg = df.groupBy("order_id").agg(
+        first("review_id").alias("review_id"),
+        first("review_score").alias("review_score"),
+        first("review_comment_message").alias("review_comment_message"),
+        count("*").alias("num_reviews")
+    )
+    
+    metadata = write_to_iceberg(spark, df_agg, "order_reviews")
+    logger.info(f"Order Reviews: {metadata['row_count']} rows (1 per order)")
+    return df_agg, metadata
 
 
 def silver_cleaned_product_category(spark):

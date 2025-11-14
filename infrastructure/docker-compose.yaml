@@ -61,7 +61,6 @@ services:
       HADOOP_CLIENT_OPTS: "-Xmx1G"
     command: >
       bash -c "
-      /opt/hive/bin/schematool -dbType postgres -initSchema --verbose &&
       /opt/hive/bin/hive --skiphadoopversion --skiphbasecp --service metastore
       "
     ports:

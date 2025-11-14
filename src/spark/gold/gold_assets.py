@@ -112,7 +112,7 @@ def dim_customer(spark):
             how="left"
             )
     df = df.withColumnRenamed(
-            "geplocation_lat", "customer_lat"
+            "geolocation_lat", "customer_lat"
         ).withColumnRenamed(
             "geolocation_lng", "customer_lng"
         )
@@ -122,6 +122,7 @@ def dim_customer(spark):
         "geolocation_zip_code_prefix",
         "customer_zip_code_prefix"
     )
+    df = df.dropDuplicates(subset=["customer_id"])
     metadata = write_to_iceberg(spark, df, "dim_customer")
     return df, metadata
 
@@ -166,8 +167,7 @@ def dim_review(spark):
     df_review = read_from_iceberg(spark, "order_reviews")
     df = df_review.select(
         "review_id",
-        "review_score",
-        "review_comment_message"
+        "review_score"
     )
     metadata = write_to_iceberg(spark, df, "dim_review")
     return df, metadata
@@ -207,7 +207,6 @@ def dim_date(spark):
 def fact_sales(spark):
     logger.info("Building fact_sales ....")
 
-
     df_order = read_from_iceberg(spark, "orders", namespace="iceberg.silver")
     df_order_items = read_from_iceberg(spark, "order_items", namespace="iceberg.silver")
     df_payments = read_from_iceberg(spark, "payments", namespace="iceberg.silver")
@@ -218,16 +217,17 @@ def fact_sales(spark):
     dim_seller = read_from_iceberg(spark, "dim_seller", namespace="iceberg.gold")
     dim_date = read_from_iceberg(spark, "dim_date", namespace="iceberg.gold")
 
+
     df_base = df_order.join(df_order_items, "order_id", "inner")
 
     df = (
         df_base
-        .join(dim_order, "order_id", "inner")
+        .join(dim_order, ["order_id"], "inner")
         .join(dim_product, "product_id", "inner")
         .join(dim_customer, "customer_id", "inner")
         .join(dim_seller, "seller_id", "inner")
         .join(df_payments, "order_id", "inner")
-        .join(df_reviews, "order_id", "inner")
+        .join(df_reviews, "order_id", "inner")  
         .join(
             dim_date,
             df_base["order_purchase_timestamp"].cast("date") == dim_date["date"],
