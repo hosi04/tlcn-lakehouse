@@ -1,0 +1,6 @@
+python -m  src.spark.bronze.bronze_assets
+python -m  src.spark.silver.silver_assets
+python -m  src.spark.gold.gold_assets
+
+uvicorn src.chatbot.backend.app:app --reload --port 5000
+streamlit run src/chatbot/frontend/ui.py

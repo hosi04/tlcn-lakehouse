@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic
+requests
+trino
+langchain
+langchain-google-vertexai
+streamlit
+minio
