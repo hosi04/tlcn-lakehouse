@@ -27,7 +27,8 @@ services:
       - ./trino/etc:/usr/lib/trino/etc:ro
       - ./trino/catalog:/etc/trino/catalog
     depends_on:
-      - hive-metastore
+      hive-metastore:
+        condition: service_healthy
     networks:
       - lakehouse-network
 
@@ -44,10 +45,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - lakehouse-network
-
   hive-metastore:
-    image: apache/hive:3.1.3
+    build:
+      context: ./hive-metastore
+      dockerfile: Dockerfile
     container_name: hive-metastore
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9083"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
     environment:
       SERVICE_NAME: metastore
       HIVE_METASTORE_DB_TYPE: postgres
@@ -59,16 +68,15 @@ services:
       HIVE_AUX_JARS_PATH: /opt/hive/auxlib
       HADOOP_CLASSPATH: "/opt/hive/auxlib/*:/opt/hive/lib/*"
       HADOOP_CLIENT_OPTS: "-Xmx1G"
-    command: >
-      bash -c "
-      /opt/hive/bin/hive --skiphadoopversion --skiphbasecp --service metastore
-      "
+      PGPASSWORD: hive
     ports:
       - "9083:9083"
     depends_on:
-      - metastore-db
+      metastore-db:
+        condition: service_healthy
     volumes:
       - ./hive-metastore/conf/core-site.xml:/opt/hive/conf/core-site.xml:ro
+      - ./hive-metastore/conf/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
       - ./hive-metastore/lib:/opt/hive/auxlib:ro
     networks:
       - lakehouse-network
@@ -76,6 +84,12 @@ services:
   metastore-db:
     image: postgres:14
     container_name: metastore-db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_USER: hive
       POSTGRES_PASSWORD: hive
@@ -93,7 +107,10 @@ services:
       dockerfile: Dockerfile
     container_name: superset
     environment:
-      - SUPERSET_DATABASE_URI=postgresql://superset:password@postgres/superset
+      SUPERSET_DATABASE_URI: postgresql://superset:password@postgres/superset
+      SUPERSET_SECRET_KEY: J8u340f9hfn349h8f349h8f
+      ADMIN_USER: superset
+      ADMIN_PASSWORD: superset
     ports:
       - "8088:8088"
     depends_on:

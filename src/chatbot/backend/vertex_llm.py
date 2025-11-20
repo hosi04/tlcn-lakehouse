@@ -16,6 +16,6 @@ def get_vertex_llm():
         project=PROJECT_ID,
         location=LOCATION,
         temperature=0.0,
-        max_output_tokens=800
+        max_output_token=None
     )
     return llm

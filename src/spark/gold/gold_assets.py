@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 def init_spark():
     jar_packages = [
-        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1",
         "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1",
         "software.amazon.awssdk:s3:2.20.125",
         "org.apache.hadoop:hadoop-aws:3.3.1"

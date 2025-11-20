@@ -1,7 +1,7 @@
 from config.spark_config import SparkConnect
 from dotenv import load_dotenv
 import os
-from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, max as spark_max, count
+from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, last, max as spark_max, count
 from pyspark.sql import DataFrame
 import logging
 
@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 def init_spark():
     jar_packages = [
-        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1",
         "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1",
         "software.amazon.awssdk:s3:2.20.125",
         "org.apache.hadoop:hadoop-aws:3.3.1"
@@ -158,8 +157,8 @@ def silver_cleaned_payment(spark):
     df_agg = df.groupBy("order_id").agg(
         spark_sum("payment_value").alias("payment_value"),
         spark_max("payment_installments").alias("payment_installments"),
-        first("payment_type").alias("payment_type"),
-        first("payment_sequential").alias("payment_sequential"),
+        last("payment_type").alias("payment_type"),
+        last("payment_sequential").alias("payment_sequential"),
         count("*").alias("num_payments")
     )
     
@@ -171,6 +170,7 @@ def silver_cleaned_payment(spark):
 def silver_cleaned_order_review(spark):
     """Clean and process order review data - AGGREGATE by order_id"""
     df = read_from_iceberg(spark, "olist_order_reviews_dataset")
+    df = df.withColumn("review_score", col("review_score").cast("integer"))
     df = df.drop("review_comment_title")
     df = df.na.drop()
     
