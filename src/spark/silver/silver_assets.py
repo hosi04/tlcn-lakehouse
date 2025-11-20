@@ -1,7 +1,7 @@
 from config.spark_config import SparkConnect
 from dotenv import load_dotenv
 import os
-from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, last, max as spark_max, count
+from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, max as spark_max, count
 from pyspark.sql import DataFrame
 import logging
 
@@ -157,8 +157,8 @@ def silver_cleaned_payment(spark):
     df_agg = df.groupBy("order_id").agg(
         spark_sum("payment_value").alias("payment_value"),
         spark_max("payment_installments").alias("payment_installments"),
-        last("payment_type").alias("payment_type"),
-        last("payment_sequential").alias("payment_sequential"),
+        first("payment_type").alias("payment_type"),
+        spark_max("payment_sequential").alias("payment_sequential"),
         count("*").alias("num_payments")
     )
     

@@ -4,6 +4,13 @@ services:
       context: ./minio
       dockerfile: Dockerfile
     container_name: minio
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
@@ -21,6 +28,7 @@ services:
       context: ./trino
       dockerfile: Dockerfile
     container_name: trino
+    restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
@@ -35,6 +43,12 @@ services:
   postgres:
     image: postgres:13
     container_name: postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_USER: superset
       POSTGRES_PASSWORD: password
@@ -45,6 +59,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - lakehouse-network
+
+
   hive-metastore:
     build:
       context: ./hive-metastore
@@ -55,8 +71,8 @@ services:
       test: ["CMD", "nc", "-z", "localhost", "9083"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 90s
+      retries: 5
+      start_period: 120s
     environment:
       SERVICE_NAME: metastore
       HIVE_METASTORE_DB_TYPE: postgres
@@ -106,15 +122,28 @@ services:
       context: ./superset
       dockerfile: Dockerfile
     container_name: superset
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
     environment:
       SUPERSET_DATABASE_URI: postgresql://superset:password@postgres/superset
       SUPERSET_SECRET_KEY: J8u340f9hfn349h8f349h8f
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      PYTHONPATH: /app/pythonpath
       ADMIN_USER: superset
       ADMIN_PASSWORD: superset
+      PGPASSWORD: password
     ports:
       - "8088:8088"
+    volumes:
+      - superset_home:/app/superset_home
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - lakehouse-network
 
@@ -122,6 +151,7 @@ volumes:
   minio_data:
   postgres_data:
   metastore_db_data:
+  superset_home:
 
 networks:
   lakehouse-network:
