@@ -1,72 +1,18 @@
-from config.spark_config import SparkConnect
-from dotenv import load_dotenv
-import os
-from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, max as spark_max, count
+from pyspark.sql.functions import col, round as spark_round, sum as spark_sum, first, max as spark_max, count, avg
 from pyspark.sql import DataFrame
 import logging
-
+from dotenv import load_dotenv
+from src.spark.utils import get_spark_session
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def init_spark():
-    jar_packages = [
-        "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1",
-        "software.amazon.awssdk:s3:2.20.125",
-        "org.apache.hadoop:hadoop-aws:3.3.1"
-    ]
-    spark_conf = {
-        "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
-        "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
-        "spark.sql.catalog.iceberg.type": "hive",
-        "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-        "spark.sql.catalog.iceberg.warehouse": "s3a://lakehouse",
-
-        # S3A (MinIO)
-        "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-        "spark.hadoop.fs.AbstractFileSystem.s3a.impl": "org.apache.hadoop.fs.s3a.S3A",
-        "spark.hadoop.fs.s3a.endpoint": os.getenv("MINIO_ENDPOINT"),
-        "spark.hadoop.fs.s3a.path.style.access": "true",
-        "spark.hadoop.fs.s3a.connection.ssl.enabled": "false",
-        "spark.hadoop.fs.s3a.access.key": os.getenv("MINIO_ACCESS_KEY"),
-        "spark.hadoop.fs.s3a.secret.key": os.getenv("MINIO_SECRET_KEY"),
-        "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-
-        # Map scheme `s3://` -> dùng driver S3A (để đọc các location `s3://` do HMS/Trino ghi)
-        "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-        "spark.hadoop.fs.AbstractFileSystem.s3.impl": "org.apache.hadoop.fs.s3a.S3A",
-        "spark.hadoop.fs.s3.endpoint": os.getenv("MINIO_ENDPOINT"),
-        "spark.hadoop.fs.s3.path.style.access": "true",
-        "spark.hadoop.fs.s3.connection.ssl.enabled": "false",
-        "spark.hadoop.fs.s3.access.key": os.getenv("MINIO_ACCESS_KEY"),
-        "spark.hadoop.fs.s3.secret.key": os.getenv("MINIO_SECRET_KEY"),
-
-        # Memory & Iceberg
-        "spark.executor.memoryOverhead": "2g",
-        "spark.sql.iceberg.direct-write.enabled": "false",
-        "spark.sql.iceberg.vectorization.enabled": "false",
-    }
-    spark = SparkConnect(
-        app_name="Sliver Ingest",
-        master_url="local[*]",
-        executor_cores=2,
-        executor_memory="4g",
-        driver_memory="8g",
-        num_executors=1,
-        jar_packages=jar_packages,
-        spark_conf=spark_conf,
-        log_level="WARN"
-    ).spark
-    return spark
-
 
 def read_from_iceberg(spark, table_name: str, namespace="iceberg.bronze") -> DataFrame:
     """Read data from Iceberg bronze layer"""
     full_table_name = f"{namespace}.{table_name}"
     logger.info(f"Reading from {full_table_name}")
     return spark.read.format("iceberg").load(full_table_name)
-
 
 def write_to_iceberg(spark, df: DataFrame, table_name: str, namespace="iceberg.silver"):
     """Write a Spark DataFrame to an Iceberg table in the Silver layer."""
@@ -95,8 +41,6 @@ def write_to_iceberg(spark, df: DataFrame, table_name: str, namespace="iceberg.s
         "columns": df.columns,
     }
 
-
-
 def silver_cleaned_customer(spark):
     """Clean and process customer data"""
     df = read_from_iceberg(spark, "olist_customers_dataset")
@@ -105,7 +49,6 @@ def silver_cleaned_customer(spark):
     metadata = write_to_iceberg(spark, df, "customers")
     return df, metadata
 
-
 def silver_cleaned_seller(spark):
     """Clean and process seller data"""
     df = read_from_iceberg(spark, "olist_sellers_dataset")
@@ -113,7 +56,6 @@ def silver_cleaned_seller(spark):
     df = df.dropDuplicates(subset=["seller_id"])
     metadata = write_to_iceberg(spark, df, "sellers")
     return df, metadata
-
 
 def silver_cleaned_product(spark):
     """Clean and process product data"""
@@ -135,7 +77,6 @@ def silver_cleaned_product(spark):
     metadata = write_to_iceberg(spark, df, "products")
     return df, metadata
 
-
 def silver_cleaned_order_item(spark):
     """Clean and process order items data"""
     df = read_from_iceberg(spark, "olist_order_items_dataset")
@@ -145,7 +86,6 @@ def silver_cleaned_order_item(spark):
     df = df.dropDuplicates()
     metadata = write_to_iceberg(spark, df, "order_items")
     return df, metadata
-
 
 def silver_cleaned_payment(spark):
     """Clean and process payment data - AGGREGATE by order_id"""
@@ -166,7 +106,6 @@ def silver_cleaned_payment(spark):
     logger.info(f"Payments: {metadata['row_count']} rows (aggregated from multiple payment methods)")
     return df_agg, metadata
 
-
 def silver_cleaned_order_review(spark):
     """Clean and process order review data - AGGREGATE by order_id"""
     df = read_from_iceberg(spark, "olist_order_reviews_dataset")
@@ -185,7 +124,6 @@ def silver_cleaned_order_review(spark):
     logger.info(f"Order Reviews: {metadata['row_count']} rows (1 per order)")
     return df_agg, metadata
 
-
 def silver_cleaned_product_category(spark):
     """Clean and process product category data"""
     df = read_from_iceberg(spark, "product_category_name_translation")
@@ -194,7 +132,6 @@ def silver_cleaned_product_category(spark):
     metadata = write_to_iceberg(spark, df, "product_category")
     return df, metadata
 
-
 def silver_cleaned_order(spark):
     """Clean and process order data"""
     df = read_from_iceberg(spark, "olist_orders_dataset")
@@ -202,7 +139,6 @@ def silver_cleaned_order(spark):
     df = df.dropDuplicates(["order_id"])
     metadata = write_to_iceberg(spark, df, "orders")
     return df, metadata
-
 
 def silver_date(spark):
     """Create date dimension from orders"""
@@ -213,11 +149,9 @@ def silver_date(spark):
     metadata = write_to_iceberg(spark, df, "date")
     return df, metadata
 
-
 def silver_cleaned_geolocation(spark):
-    """Clean and process geolocation data with Brazil boundaries filter"""
+    """Clean and process geolocation data with Brazil boundaries filter and Aggregation"""
     df = read_from_iceberg(spark, "olist_geolocation_dataset")
-    df = df.dropDuplicates()
     df = df.na.drop()
     
     # Filter coordinates for Brazil boundaries
@@ -227,14 +161,21 @@ def silver_cleaned_geolocation(spark):
         & (col("geolocation_lat") >= -33.75116944)
         & (col("geolocation_lng") <= -34.79314722)
     )
-    
-    metadata = write_to_iceberg(spark, df, "geolocation")
-    return df, metadata
 
+    # Aggregate by zip_code_prefix to ensure uniqueness for joins
+    df_agg = df.groupBy("geolocation_zip_code_prefix").agg(
+        avg("geolocation_lat").alias("geolocation_lat"),
+        avg("geolocation_lng").alias("geolocation_lng"),
+        first("geolocation_city").alias("geolocation_city"),
+        first("geolocation_state").alias("geolocation_state")
+    )
+    
+    metadata = write_to_iceberg(spark, df_agg, "geolocation")
+    return df_agg, metadata
 
 if __name__ == "__main__":
     load_dotenv()
-    spark = init_spark()
+    spark = get_spark_session("Silver Ingest")
 
     spark.sql("CREATE NAMESPACE IF NOT EXISTS iceberg.silver")
     

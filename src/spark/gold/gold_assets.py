@@ -1,64 +1,12 @@
-from config.spark_config import SparkConnect
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import *
 import logging
-import os
 from dotenv import load_dotenv
+from src.spark.utils import get_spark_session
 
-
+# Setup logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
-
-
-def init_spark():
-    jar_packages = [
-        "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1",
-        "software.amazon.awssdk:s3:2.20.125",
-        "org.apache.hadoop:hadoop-aws:3.3.1"
-    ]
-    spark_conf = {
-        "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
-        "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
-        "spark.sql.catalog.iceberg.type": "hive",
-        "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-        "spark.sql.catalog.iceberg.warehouse": "s3a://lakehouse",
-
-        # S3A (MinIO)
-        "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-        "spark.hadoop.fs.AbstractFileSystem.s3a.impl": "org.apache.hadoop.fs.s3a.S3A",
-        "spark.hadoop.fs.s3a.endpoint": os.getenv("MINIO_ENDPOINT"),
-        "spark.hadoop.fs.s3a.path.style.access": "true",
-        "spark.hadoop.fs.s3a.connection.ssl.enabled": "false",
-        "spark.hadoop.fs.s3a.access.key": os.getenv("MINIO_ACCESS_KEY"),
-        "spark.hadoop.fs.s3a.secret.key": os.getenv("MINIO_SECRET_KEY"),
-        "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-
-        # Map scheme `s3://` -> dùng driver S3A (để đọc các location `s3://` do HMS/Trino ghi)
-        "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-        "spark.hadoop.fs.AbstractFileSystem.s3.impl": "org.apache.hadoop.fs.s3a.S3A",
-        "spark.hadoop.fs.s3.endpoint": os.getenv("MINIO_ENDPOINT"),
-        "spark.hadoop.fs.s3.path.style.access": "true",
-        "spark.hadoop.fs.s3.connection.ssl.enabled": "false",
-        "spark.hadoop.fs.s3.access.key": os.getenv("MINIO_ACCESS_KEY"),
-        "spark.hadoop.fs.s3.secret.key": os.getenv("MINIO_SECRET_KEY"),
-
-        # Memory & Iceberg
-        "spark.executor.memoryOverhead": "2g",
-        "spark.sql.iceberg.direct-write.enabled": "false",
-        "spark.sql.iceberg.vectorization.enabled": "false",
-    }
-    spark = SparkConnect(
-        app_name="Bronze Ingest",
-        master_url="local[*]",
-        executor_cores=2,
-        executor_memory="4g",
-        driver_memory="8g",
-        num_executors=1,
-        jar_packages=jar_packages,
-        spark_conf=spark_conf,
-        log_level="WARN"
-    ).spark
-    return spark
 
 def read_from_iceberg(spark, table_name: str, namespace="iceberg.silver") -> DataFrame:
     """Read data from Iceberg silver layer"""
@@ -88,7 +36,6 @@ def write_to_iceberg(spark, df: DataFrame, table_name: str, namespace="iceberg.g
         "columns": df.columns,
     }
 
-
 def dim_order(spark):
     logger.info("Building dim_order ...")
     df_orders = read_from_iceberg(spark, "orders")
@@ -106,15 +53,19 @@ def dim_customer(spark):
     logger.info("Building dim_customer ...")
     df_customers = read_from_iceberg(spark, "customers")
     df_geolocation = read_from_iceberg(spark, "geolocation")
+    
+    # Join on zip_code_prefix. Since geolocation is now unique by zip (Silver layer), this is safe.
     df = df_customers.join(df_geolocation, 
             df_customers["customer_zip_code_prefix"] == df_geolocation["geolocation_zip_code_prefix"],
             how="left"
             )
+    
     df = df.withColumnRenamed(
             "geolocation_lat", "customer_lat"
         ).withColumnRenamed(
             "geolocation_lng", "customer_lng"
         )
+    
     df = df.drop(
         "geolocation_city",
         "geolocation_state",
@@ -137,7 +88,6 @@ def dim_product(spark):
     df_products = read_from_iceberg(spark, "products").alias("p")
     df_product_category = read_from_iceberg(spark, "product_category").alias("pc")
     
-
     df = df_products.join(
         df_product_category,
         df_products["product_category_name"] == df_product_category["product_category_name"],
@@ -159,7 +109,6 @@ def dim_product(spark):
     
     metadata = write_to_iceberg(spark, df, "dim_product")
     return df, metadata
-
 
 def dim_review(spark):
     logger.info("Building dim_review ...")
@@ -216,7 +165,6 @@ def fact_sales(spark):
     dim_seller = read_from_iceberg(spark, "dim_seller", namespace="iceberg.gold")
     dim_date = read_from_iceberg(spark, "dim_date", namespace="iceberg.gold")
 
-
     df_base = df_order.join(df_order_items, "order_id", "inner")
 
     df = (
@@ -242,9 +190,9 @@ def fact_sales(spark):
         "seller_id",
         "review_id",
         "date_key",
-        "price",
-        "freight_value",
-        "payment_value",
+        col("price").alias("item_price"), # Renamed for clarity
+        col("freight_value").alias("item_freight_value"), # Renamed for clarity
+        col("payment_value").alias("order_total_payment"), # Renamed to indicate it's order-level
         "payment_installments",
         "payment_sequential",
     )
@@ -254,7 +202,7 @@ def fact_sales(spark):
 
 if __name__ == "__main__":
     load_dotenv()
-    spark = init_spark()
+    spark = get_spark_session("Gold Ingest")
 
     spark.sql("CREATE NAMESPACE IF NOT EXISTS iceberg.gold")
     
