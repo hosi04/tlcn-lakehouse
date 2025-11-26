@@ -1,4 +1,4 @@
-from src.chatbot.backend.vertex_llm import get_vertex_llm
+from src.chatbot.backend.gemini_llm import get_llm
 from src.chatbot.backend.prompt import SQL_SYSTEM_PROMPT
 from src.chatbot.backend.trino_connector import trino_query
 
@@ -10,7 +10,7 @@ sql_prompt = PromptTemplate(
     template=SQL_SYSTEM_PROMPT + "\nCâu hỏi người dùng: {question}\nSQL:"
 )
 
-llm = get_vertex_llm()
+llm = get_llm()
 sql_chain = LLMChain(llm=llm, prompt=sql_prompt)
 
 def generate_sql(question: str) -> str:

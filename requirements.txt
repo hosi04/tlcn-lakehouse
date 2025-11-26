@@ -4,6 +4,6 @@ pydantic
 requests
 trino
 langchain
-langchain-google-vertexai
+langchain-google-genai
 streamlit
 minio
