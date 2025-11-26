@@ -27,21 +27,21 @@ def get_spark_session(app_name: str = "Lakehouse App") -> SparkSession:
         # S3A (MinIO)
         "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
         "spark.hadoop.fs.AbstractFileSystem.s3a.impl": "org.apache.hadoop.fs.s3a.S3A",
-        "spark.hadoop.fs.s3a.endpoint": os.getenv("MINIO_ENDPOINT", "http://localhost:9000"),
+        "spark.hadoop.fs.s3a.endpoint": os.getenv("MINIO_ENDPOINT"),
         "spark.hadoop.fs.s3a.path.style.access": "true",
         "spark.hadoop.fs.s3a.connection.ssl.enabled": "false",
-        "spark.hadoop.fs.s3a.access.key": os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
-        "spark.hadoop.fs.s3a.secret.key": os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        "spark.hadoop.fs.s3a.access.key": os.getenv("MINIO_ACCESS_KEY"),
+        "spark.hadoop.fs.s3a.secret.key": os.getenv("MINIO_SECRET_KEY"),
         "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
 
         # Map scheme `s3://` -> use S3A driver
         "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
         "spark.hadoop.fs.AbstractFileSystem.s3.impl": "org.apache.hadoop.fs.s3a.S3A",
-        "spark.hadoop.fs.s3.endpoint": os.getenv("MINIO_ENDPOINT", "http://localhost:9000"),
+        "spark.hadoop.fs.s3.endpoint": os.getenv("MINIO_ENDPOINT"),
         "spark.hadoop.fs.s3.path.style.access": "true",
         "spark.hadoop.fs.s3.connection.ssl.enabled": "false",
-        "spark.hadoop.fs.s3.access.key": os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
-        "spark.hadoop.fs.s3.secret.key": os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        "spark.hadoop.fs.s3.access.key": os.getenv("MINIO_ACCESS_KEY"),
+        "spark.hadoop.fs.s3.secret.key": os.getenv("MINIO_SECRET_KEY"),
 
         # Memory & Iceberg optimizations
         "spark.executor.memoryOverhead": "2g",

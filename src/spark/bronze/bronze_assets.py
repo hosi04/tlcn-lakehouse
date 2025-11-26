@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 def create_bucket_if_not_exists(bucket_name: str):
     minio_client = Minio(
-        endpoint=os.getenv("MINIO_ENDPOINT", "localhost:9000").replace("http://", ""),
-        access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
-        secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        endpoint=os.getenv("MINIO_ENDPOINT").replace("http://", ""),
+        access_key=os.getenv("MINIO_ACCESS_KEY"),
+        secret_key=os.getenv("MINIO_SECRET_KEY"),
         secure=False
     )
     if not minio_client.bucket_exists(bucket_name=bucket_name):
