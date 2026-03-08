@@ -88,7 +88,7 @@ def silver_cleaned_order_item(spark):
     return df, metadata
 
 def silver_cleaned_payment(spark):
-    """Clean and process payment data - AGGREGATE by order_id"""
+    """Clean and process payment data"""
     df = read_from_iceberg(spark, "olist_order_payments_dataset")
     df = df.withColumn("payment_value", spark_round(col("payment_value"), 2).cast("double"))
     df = df.withColumn("payment_installments", col("payment_installments").cast("integer"))
@@ -99,7 +99,7 @@ def silver_cleaned_payment(spark):
     return df, metadata
 
 def silver_cleaned_order_review(spark):
-    """Clean and process order review data - AGGREGATE by order_id"""
+    """Clean and process order review data"""
     df = read_from_iceberg(spark, "olist_order_reviews_dataset")
     df = df.withColumn("review_score", col("review_score").cast("integer"))
     df = df.drop("review_comment_title")
@@ -139,7 +139,7 @@ def silver_cleaned_geolocation(spark):
     df = read_from_iceberg(spark, "olist_geolocation_dataset")
     df = df.na.drop()
     
-    # Filter coordinates for Brazil boundaries
+
     df = df.filter(
         (col("geolocation_lat") <= 5.27438888)
         & (col("geolocation_lng") >= -73.98283055)
@@ -147,7 +147,7 @@ def silver_cleaned_geolocation(spark):
         & (col("geolocation_lng") <= -34.79314722)
     )
 
-    # Aggregate by zip_code_prefix to ensure uniqueness for joins
+
     df_agg = df.groupBy("geolocation_zip_code_prefix").agg(
         avg("geolocation_lat").alias("geolocation_lat"),
         avg("geolocation_lng").alias("geolocation_lng"),

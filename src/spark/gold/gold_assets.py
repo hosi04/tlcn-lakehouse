@@ -276,7 +276,6 @@ def fact_order(spark):
     dim_date = read_from_iceberg(spark, "dim_date", namespace="iceberg.gold")
     
     df_order_agg = df_order_items.groupBy(col("oi.order_id")).agg(
-        sum(col("oi.price") + col("oi.freight_value")).alias("order_items_total"),
         count(col("oi.order_item_id")).alias("number_of_items"),
         sum(col("oi.price")).alias("total_product_value"),
         sum(col("oi.freight_value")).alias("total_freight_value")
