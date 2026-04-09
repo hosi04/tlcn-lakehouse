@@ -1,8 +1,23 @@
+# Secrets & credentials
 .env
 
+# Python bytecode & cache
+*.pyc
+*.pyo
+__pycache__/
+
+# Data files (large CSV datasets)
+data/
+
+# Logs
 *.log
+infrastructure/airflow/logs/
 
-**/lib/
+# MLflow local artifacts
+mlruns/
 
+# Compressed files
 *.zip
 
+# Hive metastore lib jars (binary dependencies)
+**/lib/
