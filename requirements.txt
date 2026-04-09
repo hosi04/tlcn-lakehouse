@@ -9,3 +9,6 @@ langchain-google-genai
 streamlit
 minio
 pyspark==3.5.3
+mlflow
+apache-airflow
+kafka-python
