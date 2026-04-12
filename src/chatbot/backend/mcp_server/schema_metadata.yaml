@@ -1,0 +1,263 @@
+tables:
+  "iceberg.gold.dim_customer":
+    description: "Bảng dimension chứa thông tin khách hàng, mỗi row là 1 khách hàng duy nhất"
+    layer: "gold"
+    type: "dimension"
+    business_domain:
+      - "khách hàng"
+      - "customer"
+      - "địa chỉ"
+      - "thành phố"
+      - "tiểu bang"
+      - "vị trí địa lý"
+    join_hints:
+      - "JOIN iceberg.gold.fact_order fo ON fo.customer_key = dim_customer.customer_key"
+      - "JOIN iceberg.gold.fact_order_item foi ON foi.customer_key = dim_customer.customer_key"
+    columns:
+      customer_key:
+        description: "Surrogate key (khóa thay thế) tự sinh, dùng để JOIN với fact tables"
+        is_key: true
+      customer_id:
+        description: "Business key gốc từ hệ thống, mã định danh khách hàng"
+      customer_unique_id:
+        description: "Mã khách hàng unique, dùng để nhận diện khách hàng đặt nhiều đơn"
+      customer_city:
+        description: "Tên thành phố của khách hàng"
+      customer_state:
+        description: "Mã tiểu bang/tỉnh thành của khách hàng (ví dụ: SP, RJ)"
+      customer_lat:
+        description: "Vĩ độ địa lý của địa chỉ khách hàng"
+      customer_lng:
+        description: "Kinh độ địa lý của địa chỉ khách hàng"
+
+  "iceberg.gold.dim_product":
+    description: "Bảng dimension chứa thông tin sản phẩm, mỗi row là 1 sản phẩm"
+    layer: "gold"
+    type: "dimension"
+    business_domain:
+      - "sản phẩm"
+      - "product"
+      - "danh mục"
+      - "category"
+      - "hàng hóa"
+    join_hints:
+      - "JOIN iceberg.gold.fact_order_item foi ON foi.product_key = dim_product.product_key"
+    columns:
+      product_key:
+        description: "Surrogate key tự sinh, dùng để JOIN với fact_order_item"
+        is_key: true
+      product_id:
+        description: "Business key gốc, mã định danh sản phẩm"
+      product_category_name:
+        description: "Tên danh mục sản phẩm bằng tiếng Bồ Đào Nha"
+      product_category_name_english:
+        description: "Tên danh mục sản phẩm bằng tiếng Anh (dùng khi muốn filter/group theo category)"
+      product_name_length:
+        description: "Độ dài tên sản phẩm tính theo ký tự"
+      product_description_length:
+        description: "Độ dài mô tả sản phẩm tính theo ký tự"
+      product_photos_qty:
+        description: "Số lượng ảnh của sản phẩm"
+      product_weight_g:
+        description: "Trọng lượng sản phẩm (gram)"
+      product_length_cm:
+        description: "Chiều dài sản phẩm (cm)"
+      product_height_cm:
+        description: "Chiều cao sản phẩm (cm)"
+      product_width_cm:
+        description: "Chiều rộng sản phẩm (cm)"
+
+  "iceberg.gold.dim_seller":
+    description: "Bảng dimension chứa thông tin người bán, mỗi row là 1 seller"
+    layer: "gold"
+    type: "dimension"
+    business_domain:
+      - "người bán"
+      - "seller"
+      - "nhà cung cấp"
+      - "shop"
+    join_hints:
+      - "JOIN iceberg.gold.fact_order_item foi ON foi.seller_key = dim_seller.seller_key"
+    columns:
+      seller_key:
+        description: "Surrogate key tự sinh, dùng để JOIN với fact_order_item"
+        is_key: true
+      seller_id:
+        description: "Business key gốc, mã định danh người bán"
+      seller_zip_code_prefix:
+        description: "Mã zip code (5 số đầu) của địa chỉ người bán"
+      seller_city:
+        description: "Tên thành phố của người bán"
+      seller_state:
+        description: "Mã tiểu bang của người bán (ví dụ: SP, MG)"
+
+  "iceberg.gold.dim_date":
+    description: "Bảng calendar dimension, mỗi row là 1 ngày. Dùng để phân tích theo thời gian"
+    layer: "gold"
+    type: "dimension"
+    business_domain:
+      - "ngày"
+      - "tháng"
+      - "năm"
+      - "thời gian"
+      - "quý"
+      - "tuần"
+      - "thứ"
+      - "cuối tuần"
+    join_hints:
+      - "JOIN iceberg.gold.fact_order fo ON fo.purchase_date_key = dim_date.date_key  -- ngày đặt hàng"
+      - "JOIN iceberg.gold.fact_order fo ON fo.delivered_date_key = dim_date.date_key  -- ngày giao hàng"
+      - "JOIN iceberg.gold.fact_order_item foi ON foi.purchase_date_key = dim_date.date_key"
+    columns:
+      date_key:
+        description: "Surrogate key ở định dạng YYYYMMDD (ví dụ: 20180115), dùng để JOIN"
+        is_key: true
+      date:
+        description: "Giá trị ngày thực tế kiểu DATE"
+      year:
+        description: "Năm (ví dụ: 2017, 2018)"
+      quarter:
+        description: "Quý trong năm (1, 2, 3, 4)"
+      month:
+        description: "Số tháng (1–12)"
+      day:
+        description: "Số ngày trong tháng (1–31)"
+      day_of_week:
+        description: "Số thứ trong tuần (1=Chủ nhật, 7=Thứ Bảy)"
+      week_of_year:
+        description: "Tuần thứ mấy trong năm (1–53)"
+      month_name:
+        description: "Tên tháng tiếng Anh (January, February, ...)"
+      day_name:
+        description: "Tên thứ tiếng Anh (Monday, Tuesday, ...)"
+      is_weekend:
+        description: "TRUE nếu là ngày cuối tuần (Thứ Bảy hoặc Chủ nhật)"
+
+  "iceberg.gold.fact_order":
+    description: "Bảng fact tổng hợp ở cấp độ đơn hàng. Mỗi row là 1 đơn hàng với các metrics tổng hợp"
+    layer: "gold"
+    type: "fact"
+    business_domain:
+      - "đơn hàng"
+      - "order"
+      - "doanh thu"
+      - "revenue"
+      - "thanh toán"
+      - "payment"
+      - "giao hàng"
+      - "delivery"
+      - "trạng thái đơn hàng"
+      - "installment"
+    join_hints:
+      - "JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key"
+      - "JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key  -- ngày mua"
+      - "JOIN iceberg.gold.dim_date d ON fo.delivered_date_key = d.date_key  -- ngày giao"
+      - "JOIN iceberg.gold.dim_date d ON fo.estimated_delivery_date_key = d.date_key  -- ngày dự kiến"
+    columns:
+      order_key:
+        description: "Surrogate key của đơn hàng"
+        is_key: true
+      order_id:
+        description: "Business key, mã đơn hàng gốc"
+      customer_key:
+        description: "FK → dim_customer. Khóa ngoại liên kết đến khách hàng đặt đơn"
+        is_fk: true
+        references: "iceberg.gold.dim_customer.customer_key"
+      purchase_date_key:
+        description: "FK → dim_date (YYYYMMDD). Ngày đặt hàng"
+        is_fk: true
+        references: "iceberg.gold.dim_date.date_key"
+      delivered_date_key:
+        description: "FK → dim_date (YYYYMMDD). Ngày giao hàng thực tế"
+        is_fk: true
+        references: "iceberg.gold.dim_date.date_key"
+      estimated_delivery_date_key:
+        description: "FK → dim_date (YYYYMMDD). Ngày dự kiến giao hàng"
+        is_fk: true
+        references: "iceberg.gold.dim_date.date_key"
+      order_status:
+        description: "Trạng thái đơn hàng: delivered, shipped, canceled, invoiced, processing, unavailable, approved, created"
+      primary_payment_type:
+        description: "Phương thức thanh toán chính: credit_card, boleto, voucher, debit_card"
+      total_payment_value:
+        description: "Tổng giá trị thanh toán của toàn bộ đơn hàng (bao gồm freight)"
+      total_product_value:
+        description: "Tổng giá trị sản phẩm (không bao gồm freight)"
+      total_freight_value:
+        description: "Tổng phí vận chuyển của đơn hàng"
+      number_of_items:
+        description: "Số lượng items trong đơn hàng"
+      total_installments:
+        description: "Tổng số kỳ trả góp của đơn hàng"
+      payment_count:
+        description: "Số lần thanh toán (một đơn có thể thanh toán nhiều lần)"
+      delivery_actual_days:
+        description: "Số ngày giao hàng thực tế (từ ngày đặt đến ngày giao)"
+      delivery_estimate_days:
+        description: "Số ngày giao hàng dự kiến"
+      delivery_early_days:
+        description: "Số ngày giao sớm hơn dự kiến (âm = giao trễ, dương = giao sớm)"
+
+  "iceberg.gold.fact_order_item":
+    description: >
+      Bảng fact chi tiết ở cấp độ từng item trong đơn hàng. Mỗi row là 1 sản phẩm trong 1 đơn hàng.
+      QUAN TRỌNG: Bảng này KHÔNG có cột 'quantity'. Mỗi dòng = 1 item bán ra.
+      Để đếm số lượng item bán, dùng COUNT(order_item_key) hoặc COUNT(*).
+      KHÔNG dùng: quantity, qty, amount, count — những cột này KHÔNG TỒN TẠI.
+
+    layer: "gold"
+    type: "fact"
+    business_domain:
+      - "sản phẩm bán"
+      - "chi tiết đơn hàng"
+      - "order item"
+      - "doanh thu theo sản phẩm"
+      - "seller revenue"
+      - "top sản phẩm"
+      - "hàng bán chạy"
+      - "phí ship"
+      - "freight"
+    join_hints:
+      - "JOIN iceberg.gold.dim_customer dc ON foi.customer_key = dc.customer_key"
+      - "JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key"
+      - "JOIN iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key"
+      - "JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key"
+      - "JOIN iceberg.gold.dim_date d ON foi.delivered_date_key = d.date_key"
+    columns:
+      order_item_key:
+        description: "Surrogate key của item trong đơn hàng"
+        is_key: true
+      order_id:
+        description: "Business key của đơn hàng chứa item này"
+      order_item_id:
+        description: "Số thứ tự của item trong đơn hàng (1, 2, 3, ...)"
+      customer_key:
+        description: "FK → dim_customer. Khách hàng mua item này"
+        is_fk: true
+        references: "iceberg.gold.dim_customer.customer_key"
+      product_key:
+        description: "FK → dim_product. Sản phẩm trong đơn hàng"
+        is_fk: true
+        references: "iceberg.gold.dim_product.product_key"
+      seller_key:
+        description: "FK → dim_seller. Người bán item này"
+        is_fk: true
+        references: "iceberg.gold.dim_seller.seller_key"
+      purchase_date_key:
+        description: "FK → dim_date. Ngày đặt hàng item"
+        is_fk: true
+        references: "iceberg.gold.dim_date.date_key"
+      delivered_date_key:
+        description: "FK → dim_date. Ngày giao hàng thực tế của item"
+        is_fk: true
+        references: "iceberg.gold.dim_date.date_key"
+      order_status:
+        description: "Trạng thái của item/đơn chứa item"
+      item_price:
+        description: "Giá của 1 item (chưa bao gồm freight)"
+      item_freight_value:
+        description: "Phí vận chuyển của item này"
+      item_total_value:
+        description: "Tổng giá trị item = item_price + item_freight_value"
+      shipping_days:
+        description: "Số ngày vận chuyển thực tế của item"

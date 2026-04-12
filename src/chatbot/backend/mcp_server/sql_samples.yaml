@@ -1,0 +1,278 @@
+samples:
+
+  # ── DOANH THU THEO THỜI GIAN ────────────────────────────────────────────────
+  - id: "revenue_by_month"
+    question: "Tổng doanh thu theo từng tháng"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          d.year,
+          d.month,
+          d.month_name,
+          SUM(fo.total_payment_value) AS total_revenue,
+          COUNT(fo.order_key) AS total_orders
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      WHERE fo.order_status = 'delivered'
+      GROUP BY d.year, d.month, d.month_name
+      ORDER BY d.year, d.month
+
+  - id: "revenue_by_quarter"
+    question: "Doanh thu theo quý"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          d.year,
+          d.quarter,
+          SUM(fo.total_payment_value) AS total_revenue,
+          COUNT(fo.order_key) AS total_orders
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      GROUP BY d.year, d.quarter
+      ORDER BY d.year, d.quarter
+
+  - id: "revenue_by_year"
+    question: "Tổng doanh thu theo năm"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          d.year,
+          SUM(fo.total_payment_value) AS total_revenue,
+          COUNT(fo.order_key) AS total_orders,
+          AVG(fo.total_payment_value) AS avg_order_value
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      GROUP BY d.year
+      ORDER BY d.year
+
+  # ── KPI ĐƠN GIÁ TRỊ ────────────────────────────────────────────────────────
+  - id: "total_revenue_all_time"
+    question: "Tổng doanh thu toàn bộ hệ thống"
+    tables: ["fact_order"]
+    sql: |
+      SELECT
+          SUM(total_payment_value) AS total_revenue
+      FROM iceberg.gold.fact_order
+      WHERE order_status = 'delivered'
+
+  - id: "total_orders_count"
+    question: "Tổng số đơn hàng đã giao thành công"
+    tables: ["fact_order"]
+    sql: |
+      SELECT
+          COUNT(order_key) AS total_delivered_orders
+      FROM iceberg.gold.fact_order
+      WHERE order_status = 'delivered'
+
+  # ── SẢN PHẨM ────────────────────────────────────────────────────────────────
+  - id: "top_product_categories_by_revenue"
+    question: "Top 10 danh mục sản phẩm có doanh thu cao nhất"
+    tables: ["fact_order_item", "dim_product"]
+    sql: |
+      SELECT
+          dp.product_category_name_english AS category,
+          SUM(foi.item_total_value) AS total_revenue,
+          COUNT(foi.order_item_key) AS total_items_sold
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+      WHERE foi.order_status = 'delivered'
+      GROUP BY dp.product_category_name_english
+      ORDER BY total_revenue DESC
+      LIMIT 10
+
+  - id: "top_product_categories_by_quantity"
+    question: "Top 10 danh mục sản phẩm bán chạy nhất theo số lượng"
+    tables: ["fact_order_item", "dim_product"]
+    sql: |
+      SELECT
+          dp.product_category_name_english AS category,
+          COUNT(foi.order_item_key) AS total_items_sold,
+          SUM(foi.item_total_value) AS total_revenue
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+      GROUP BY dp.product_category_name_english
+      ORDER BY total_items_sold DESC
+      LIMIT 10
+
+  - id: "revenue_by_category_by_month"
+    question: "Doanh thu theo danh mục sản phẩm theo từng tháng"
+    tables: ["fact_order_item", "dim_product", "dim_date"]
+    sql: |
+      SELECT
+          d.year,
+          d.month,
+          dp.product_category_name_english AS category,
+          SUM(foi.item_total_value) AS total_revenue
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+      JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
+      GROUP BY d.year, d.month, dp.product_category_name_english
+      ORDER BY d.year, d.month, total_revenue DESC
+
+  # ── SELLER ──────────────────────────────────────────────────────────────────
+  - id: "top_sellers_by_revenue"
+    question: "Top 10 seller có doanh thu cao nhất"
+    tables: ["fact_order_item", "dim_seller"]
+    sql: |
+      SELECT
+          ds.seller_id,
+          ds.seller_city,
+          ds.seller_state,
+          SUM(foi.item_total_value) AS total_revenue,
+          COUNT(DISTINCT foi.order_id) AS total_orders
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key
+      WHERE foi.order_status = 'delivered'
+      GROUP BY ds.seller_id, ds.seller_city, ds.seller_state
+      ORDER BY total_revenue DESC
+      LIMIT 10
+
+  - id: "revenue_by_seller_state"
+    question: "Doanh thu theo tiểu bang của seller"
+    tables: ["fact_order_item", "dim_seller"]
+    sql: |
+      SELECT
+          ds.seller_state,
+          SUM(foi.item_total_value) AS total_revenue,
+          COUNT(DISTINCT foi.order_id) AS total_orders,
+          COUNT(DISTINCT ds.seller_key) AS total_sellers
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key
+      GROUP BY ds.seller_state
+      ORDER BY total_revenue DESC
+
+  # ── KHÁCH HÀNG ──────────────────────────────────────────────────────────────
+  - id: "orders_by_customer_state"
+    question: "Số đơn hàng theo tiểu bang của khách hàng"
+    tables: ["fact_order", "dim_customer"]
+    sql: |
+      SELECT
+          dc.customer_state,
+          COUNT(fo.order_key) AS total_orders,
+          SUM(fo.total_payment_value) AS total_revenue
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+      GROUP BY dc.customer_state
+      ORDER BY total_orders DESC
+
+  - id: "top_customers_by_spending"
+    question: "Top 10 khách hàng chi tiêu nhiều nhất"
+    tables: ["fact_order", "dim_customer"]
+    sql: |
+      SELECT
+          dc.customer_unique_id,
+          dc.customer_city,
+          dc.customer_state,
+          COUNT(fo.order_key) AS total_orders,
+          SUM(fo.total_payment_value) AS total_spending
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+      WHERE fo.order_status = 'delivered'
+      GROUP BY dc.customer_unique_id, dc.customer_city, dc.customer_state
+      ORDER BY total_spending DESC
+      LIMIT 10
+
+  # ── THANH TOÁN ───────────────────────────────────────────────────────────────
+  - id: "payment_method_distribution"
+    question: "Phân phối phương thức thanh toán"
+    tables: ["fact_order"]
+    sql: |
+      SELECT
+          primary_payment_type,
+          COUNT(order_key) AS total_orders,
+          SUM(total_payment_value) AS total_value,
+          ROUND(COUNT(order_key) * 100.0 / SUM(COUNT(order_key)) OVER (), 2) AS percentage
+      FROM iceberg.gold.fact_order
+      GROUP BY primary_payment_type
+      ORDER BY total_orders DESC
+
+  # ── TRẠNG THÁI ĐƠN HÀNG ──────────────────────────────────────────────────────
+  - id: "order_status_distribution"
+    question: "Phân phối trạng thái đơn hàng"
+    tables: ["fact_order"]
+    sql: |
+      SELECT
+          order_status,
+          COUNT(order_key) AS total_orders,
+          ROUND(COUNT(order_key) * 100.0 / SUM(COUNT(order_key)) OVER (), 2) AS percentage
+      FROM iceberg.gold.fact_order
+      GROUP BY order_status
+      ORDER BY total_orders DESC
+
+  # ── GIAO HÀNG ────────────────────────────────────────────────────────────────
+  - id: "avg_delivery_time_by_month"
+    question: "Thời gian giao hàng trung bình theo tháng"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          d.year,
+          d.month,
+          d.month_name,
+          ROUND(AVG(fo.delivery_actual_days), 2) AS avg_delivery_days,
+          ROUND(AVG(fo.delivery_estimate_days), 2) AS avg_estimate_days,
+          ROUND(AVG(fo.delivery_early_days), 2) AS avg_early_days
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      WHERE fo.order_status = 'delivered'
+        AND fo.delivery_actual_days IS NOT NULL
+      GROUP BY d.year, d.month, d.month_name
+      ORDER BY d.year, d.month
+
+  - id: "late_deliveries_by_state"
+    question: "Số đơn giao trễ theo tiểu bang"
+    tables: ["fact_order", "dim_customer"]
+    sql: |
+      SELECT
+          dc.customer_state,
+          COUNT(fo.order_key) AS late_orders,
+          ROUND(AVG(fo.delivery_early_days), 2) AS avg_days_late
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+      WHERE fo.order_status = 'delivered'
+        AND fo.delivery_early_days < 0
+      GROUP BY dc.customer_state
+      ORDER BY late_orders DESC
+
+  # ── PHÂN TÍCH TỔNG HỢP ───────────────────────────────────────────────────────
+  - id: "avg_order_value_by_payment"
+    question: "Giá trị đơn hàng trung bình theo phương thức thanh toán"
+    tables: ["fact_order"]
+    sql: |
+      SELECT
+          primary_payment_type,
+          ROUND(AVG(total_payment_value), 2) AS avg_order_value,
+          ROUND(AVG(number_of_items), 2) AS avg_items_per_order,
+          COUNT(order_key) AS total_orders
+      FROM iceberg.gold.fact_order
+      WHERE order_status = 'delivered'
+      GROUP BY primary_payment_type
+      ORDER BY avg_order_value DESC
+
+  - id: "weekend_vs_weekday_orders"
+    question: "So sánh đơn hàng ngày thường và cuối tuần"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          CASE WHEN d.is_weekend = TRUE THEN 'Cuối tuần' ELSE 'Ngày thường' END AS day_type,
+          COUNT(fo.order_key) AS total_orders,
+          SUM(fo.total_payment_value) AS total_revenue,
+          ROUND(AVG(fo.total_payment_value), 2) AS avg_order_value
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      GROUP BY d.is_weekend
+      ORDER BY total_orders DESC
+
+  - id: "freight_cost_by_category"
+    question: "Phí vận chuyển trung bình theo danh mục sản phẩm"
+    tables: ["fact_order_item", "dim_product"]
+    sql: |
+      SELECT
+          dp.product_category_name_english AS category,
+          ROUND(AVG(foi.item_freight_value), 2) AS avg_freight,
+          ROUND(AVG(foi.item_price), 2) AS avg_price,
+          COUNT(foi.order_item_key) AS total_items
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+      GROUP BY dp.product_category_name_english
+      ORDER BY avg_freight DESC
+      LIMIT 15
