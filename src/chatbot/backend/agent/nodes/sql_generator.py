@@ -10,7 +10,6 @@ _llm = get_llm()
 
 
 def _clean_sql(raw: str) -> str:
-    """Loại bỏ markdown code fences và ký tự thừa"""
     sql = raw.strip()
     if sql.startswith("```"):
         lines = sql.splitlines()
@@ -21,14 +20,12 @@ def _clean_sql(raw: str) -> str:
 
 
 def sql_generator(state: AgentState) -> AgentState:
-    """Sinh SQL lần đầu hoặc tự sửa (self-correction) khi retry."""
     question = state["question"]
     pruned_schema = state.get("pruned_schema", "")
     retry_count = state.get("retry_count", 0)
     log = state.get("execution_log", [])
 
     if retry_count == 0:
-        # ── Lần đầu: retrieve few-shot examples + generate ──────────────────
         examples = retrieve_sql_examples(question, top_k=3)
         few_shot_text = format_examples_for_prompt(examples)
 
@@ -46,7 +43,6 @@ def sql_generator(state: AgentState) -> AgentState:
             few_shot_examples=few_shot_text,
         )
     else:
-        # ── Retry: fix SQL cũ dựa trên error message từ Trino ───────────────
         sql_error = state.get("sql_error", "")
         old_sql = state.get("sql", "")
         prompt = SQL_FIX_PROMPT.format(

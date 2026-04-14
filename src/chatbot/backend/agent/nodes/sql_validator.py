@@ -5,10 +5,6 @@ MAX_RETRIES = 3
 
 
 def sql_validator(state: AgentState) -> AgentState:
-    """
-    Chạy SQL trên Trino. Nếu lỗi, tăng retry_count và lưu error message
-    để sql_generator sửa ở vòng tiếp theo.
-    """
     sql = state.get("sql", "").strip()
     retry_count = state.get("retry_count", 0)
 
@@ -51,10 +47,6 @@ def sql_validator(state: AgentState) -> AgentState:
 
 
 def should_retry(state: AgentState) -> str:
-    """
-    Conditional edge: quyết định có retry không
-    Returns: "retry" | "success" | "give_up"
-    """
     sql_error = state.get("sql_error")
     retry_count = state.get("retry_count", 0)
 

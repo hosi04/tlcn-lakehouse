@@ -3,9 +3,6 @@ import os
 import pandas as pd
 
 def trino_query(sql: str):
-    """
-    Query Trino từ Python.
-    """
     host = os.getenv("TRINO_HOST")
     if not host:
         host = "localhost"

@@ -32,7 +32,6 @@ def visualization_selector(state: AgentState) -> AgentState:
     row_count = state.get("row_count", 0)
     question = state["question"]
 
-    # Nếu không có data, dùng table mặc định
     if not query_result or not columns:
         return {
             "chart_config": _DEFAULT_CHART,
@@ -40,7 +39,6 @@ def visualization_selector(state: AgentState) -> AgentState:
             + ["[viz_selector] Không có data → table mặc định"],
         }
 
-    # Nếu chỉ có 1 row và 1 cột → KPI card
     if row_count == 1 and len(columns) == 1:
         val = list(query_result[0].values())[0]
         return {
@@ -68,7 +66,6 @@ def visualization_selector(state: AgentState) -> AgentState:
 
     try:
         response = _llm.invoke(prompt).content.strip()
-        # Trích xuất JSON từ response
         if "```" in response:
             response = response.split("```")[1].strip()
             if response.startswith("json"):

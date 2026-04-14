@@ -1,6 +1,5 @@
 samples:
 
-  # ── DOANH THU THEO THỜI GIAN ────────────────────────────────────────────────
   - id: "revenue_by_month"
     question: "Tổng doanh thu theo từng tháng"
     tables: ["fact_order", "dim_date"]
@@ -45,7 +44,6 @@ samples:
       GROUP BY d.year
       ORDER BY d.year
 
-  # ── KPI ĐƠN GIÁ TRỊ ────────────────────────────────────────────────────────
   - id: "total_revenue_all_time"
     question: "Tổng doanh thu toàn bộ hệ thống"
     tables: ["fact_order"]
@@ -64,7 +62,6 @@ samples:
       FROM iceberg.gold.fact_order
       WHERE order_status = 'delivered'
 
-  # ── SẢN PHẨM ────────────────────────────────────────────────────────────────
   - id: "top_product_categories_by_revenue"
     question: "Top 10 danh mục sản phẩm có doanh thu cao nhất"
     tables: ["fact_order_item", "dim_product"]
@@ -109,7 +106,6 @@ samples:
       GROUP BY d.year, d.month, dp.product_category_name_english
       ORDER BY d.year, d.month, total_revenue DESC
 
-  # ── SELLER ──────────────────────────────────────────────────────────────────
   - id: "top_sellers_by_revenue"
     question: "Top 10 seller có doanh thu cao nhất"
     tables: ["fact_order_item", "dim_seller"]
@@ -141,7 +137,6 @@ samples:
       GROUP BY ds.seller_state
       ORDER BY total_revenue DESC
 
-  # ── KHÁCH HÀNG ──────────────────────────────────────────────────────────────
   - id: "orders_by_customer_state"
     question: "Số đơn hàng theo tiểu bang của khách hàng"
     tables: ["fact_order", "dim_customer"]
@@ -172,7 +167,6 @@ samples:
       ORDER BY total_spending DESC
       LIMIT 10
 
-  # ── THANH TOÁN ───────────────────────────────────────────────────────────────
   - id: "payment_method_distribution"
     question: "Phân phối phương thức thanh toán"
     tables: ["fact_order"]
@@ -186,7 +180,6 @@ samples:
       GROUP BY primary_payment_type
       ORDER BY total_orders DESC
 
-  # ── TRẠNG THÁI ĐƠN HÀNG ──────────────────────────────────────────────────────
   - id: "order_status_distribution"
     question: "Phân phối trạng thái đơn hàng"
     tables: ["fact_order"]
@@ -199,7 +192,6 @@ samples:
       GROUP BY order_status
       ORDER BY total_orders DESC
 
-  # ── GIAO HÀNG ────────────────────────────────────────────────────────────────
   - id: "avg_delivery_time_by_month"
     question: "Thời gian giao hàng trung bình theo tháng"
     tables: ["fact_order", "dim_date"]
@@ -233,7 +225,6 @@ samples:
       GROUP BY dc.customer_state
       ORDER BY late_orders DESC
 
-  # ── PHÂN TÍCH TỔNG HỢP ───────────────────────────────────────────────────────
   - id: "avg_order_value_by_payment"
     question: "Giá trị đơn hàng trung bình theo phương thức thanh toán"
     tables: ["fact_order"]

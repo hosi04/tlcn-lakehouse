@@ -20,13 +20,9 @@ class QueryBody(BaseModel):
 
 @app.post("/chat")
 def chat(body: QueryBody):
-    """
-    Main endpoint: nhận câu hỏi, trả về SQL + data + chart_config + report
-    """
     try:
         state = run_agent(body.query)
 
-        # Xử lý trường hợp non-data-query (greeting / out_of_scope)
         intent = state.get("intent", "data_query")
         if intent != "data_query":
             return {
@@ -74,9 +70,6 @@ def chat(body: QueryBody):
 
 @app.post("/index-schema")
 def index_schema(force_rebuild: bool = False):
-    """
-    Trigger re-index ChromaDB schema
-    """
     try:
         build_index(force_rebuild=force_rebuild)
         return {"success": True, "message": "Schema đã được index thành công"}

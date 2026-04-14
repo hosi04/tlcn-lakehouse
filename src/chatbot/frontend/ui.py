@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import json
 
-# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Lakehouse AI Analyst",
     page_icon="🏔️",
@@ -12,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -120,7 +118,6 @@ st.markdown("""
 
 API_URL = "http://localhost:8000"
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
     <div style='text-align:center; padding: 16px 0 8px 0;'>
@@ -132,7 +129,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Backend status
     try:
         resp = requests.get(f"{API_URL}/health", timeout=3)
         status_ok = resp.ok and resp.json().get("status") == "ok"
@@ -175,7 +171,6 @@ with st.sidebar:
 
     show_debug = st.toggle("🔍 Hiện Debug Panel", value=False)
 
-# ── Header ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class='chat-header'>
     <h1>🏔️ Lakehouse AI Analyst</h1>
@@ -183,14 +178,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Chat history ───────────────────────────────────────────────────────────────
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-
-# ── Render chart ──────────────────────────────────────────────────────────────
 def render_chart(chart_config: dict, df: pd.DataFrame):
-    """Render Plotly chart dựa trên chart_config từ backend"""
     if not chart_config or df.empty:
         return
 
@@ -284,26 +275,20 @@ def render_chart(chart_config: dict, df: pd.DataFrame):
     except Exception as e:
         st.warning(f"Không thể render chart: {e}")
 
-
-# ── Render assistant message ──────────────────────────────────────────────────
 def render_assistant_message(msg: dict):
-    """Render 1 tin nhắn assistant từ history"""
     intent = msg.get("intent", "data_query")
 
     if intent != "data_query":
         st.markdown(msg.get("report", ""))
         return
 
-    # ── Report / Analysis ─────────────────────────────────────────────────
     report = msg.get("report", "")
     if report:
         st.markdown("<div class='report-label'>📝 Phân tích &amp; Báo cáo</div>",
                     unsafe_allow_html=True)
-        # Dùng st.container để tạo vùng và st.markdown để Streamlit xử lý markdown đúng
         with st.container():
             st.markdown(report)
 
-    # ── Chart ─────────────────────────────────────────────────────────────
     chart_config = msg.get("chart_config")
     rows         = msg.get("rows", [])
     columns      = msg.get("columns", [])
@@ -318,7 +303,6 @@ def render_assistant_message(msg: dict):
         with st.expander("📋 Xem bảng dữ liệu", expanded=False):
             st.dataframe(df, use_container_width=True, height=250)
 
-    # ── Metadata pills ─────────────────────────────────────────────────────
     schemas    = msg.get("schemas_used", [])
     pruned     = msg.get("columns_pruned", 0)
     row_count  = msg.get("row_count", 0)
@@ -333,7 +317,6 @@ def render_assistant_message(msg: dict):
         st.markdown(pills_html, unsafe_allow_html=True)
 
 
-# ── Debug panel ───────────────────────────────────────────────────────────────
 def render_debug_panel(msg: dict):
     sql = msg.get("sql")
     log = msg.get("execution_log", [])
@@ -345,8 +328,6 @@ def render_debug_panel(msg: dict):
             for entry in log:
                 st.text(entry)
 
-
-# ── Render lịch sử ────────────────────────────────────────────────────────────
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         if message["role"] == "assistant":
@@ -356,13 +337,11 @@ for message in st.session_state.chat_history:
         else:
             st.markdown(message["content"])
 
-# ── Sample question từ sidebar ────────────────────────────────────────────────
 if "pending_question" in st.session_state:
     user_input = st.session_state.pop("pending_question")
 else:
     user_input = st.chat_input("Nhập câu hỏi phân tích dữ liệu...")
 
-# ── Xử lý input ───────────────────────────────────────────────────────────────
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.chat_message("user"):

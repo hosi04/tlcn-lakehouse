@@ -1,14 +1,3 @@
-"""
-Schema Indexer — Index schema metadata VÀ SQL samples vào ChromaDB
-- Collection 1: 'lakehouse_schemas'  → embed table metadata
-- Collection 2: 'sql_samples'        → embed câu hỏi mẫu
-
-Chạy một lần để khởi tạo, hoặc chạy lại khi thêm bảng / samples mới.
-
-Usage:
-    python -m src.chatbot.backend.retrieval.schema_indexer
-"""
-
 import yaml
 from pathlib import Path
 
@@ -18,18 +7,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Paths ────────────────────────────────────────────────────────────────────
 _MCP_DIR = Path(__file__).parent.parent / "mcp_server"
 _METADATA_PATH = _MCP_DIR / "schema_metadata.yaml"
 _SQL_SAMPLES_PATH = _MCP_DIR / "sql_samples.yaml"
 _STORE_PATH = Path(__file__).parent.parent / "schema_store"
 
-# ── ChromaDB collection names ─────────────────────────────────────────────────
 SCHEMA_COLLECTION = "lakehouse_schemas"
 SQL_SAMPLE_COLLECTION = "sql_samples"
-
-
-# ── Embedding function (shared) ───────────────────────────────────────────────
 def _get_embedding_function():
     return embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name="all-MiniLM-L6-v2"
@@ -41,12 +25,7 @@ def _get_client() -> chromadb.PersistentClient:
     return chromadb.PersistentClient(path=str(_STORE_PATH))
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Collection 1: Schema Metadata
-# ══════════════════════════════════════════════════════════════════════════════
-
 def _build_schema_document(table_name: str, table_meta: dict) -> tuple[str, dict]:
-    """Chuyển metadata của 1 bảng thành chuỗi text để embed."""
     cols = table_meta.get("columns", {})
     col_lines = [
         f"  - {col_name}: {col_info.get('description', '')}"
@@ -76,7 +55,6 @@ def build_schema_index(
     ef,
     force_rebuild: bool = False,
 ) -> chromadb.Collection:
-    """Index schema_metadata.yaml → collection 'lakehouse_schemas'"""
     existing = [c.name for c in client.list_collections()]
 
     if SCHEMA_COLLECTION in existing:
@@ -112,19 +90,11 @@ def build_schema_index(
     return collection
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Collection 2: SQL Samples (few-shot)
-# ══════════════════════════════════════════════════════════════════════════════
-
 def build_sql_sample_index(
     client: chromadb.PersistentClient,
     ef,
     force_rebuild: bool = False,
 ) -> chromadb.Collection:
-    """
-    Index sql_samples.yaml → collection 'sql_samples'.
-    Embed CÂU HỎI (không phải SQL) để tìm example tương tự khi query.
-    """
     existing = [c.name for c in client.list_collections()]
 
     if SQL_SAMPLE_COLLECTION in existing:
@@ -154,7 +124,6 @@ def build_sql_sample_index(
         sql = sample["sql"].strip()
         tables = ", ".join(sample.get("tables", []))
 
-        # Document = câu hỏi (để embed và tìm similarity)
         ids.append(sample_id)
         docs.append(question)
         metas.append({
@@ -170,12 +139,7 @@ def build_sql_sample_index(
     return collection
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Public API — get_collection helpers
-# ══════════════════════════════════════════════════════════════════════════════
-
 def get_collection() -> chromadb.Collection:
-    """Lấy schema collection (dùng bởi schema_retriever)."""
     client = _get_client()
     ef = _get_embedding_function()
     return client.get_or_create_collection(
@@ -186,7 +150,6 @@ def get_collection() -> chromadb.Collection:
 
 
 def get_sql_sample_collection() -> chromadb.Collection:
-    """Lấy SQL samples collection (dùng bởi sql_sample_retriever)."""
     client = _get_client()
     ef = _get_embedding_function()
     return client.get_or_create_collection(
@@ -196,12 +159,7 @@ def get_sql_sample_collection() -> chromadb.Collection:
     )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Entry point — build cả 2 collections
-# ══════════════════════════════════════════════════════════════════════════════
-
 def build_index(force_rebuild: bool = False):
-    """Build cả Schema index VÀ SQL Samples index."""
     client = _get_client()
     ef = _get_embedding_function()
 

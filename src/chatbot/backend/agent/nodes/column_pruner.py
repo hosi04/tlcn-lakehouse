@@ -7,7 +7,6 @@ _llm = get_llm()
 
 
 def _format_full_schema(full_schemas: dict) -> str:
-    """Chuyển full_schemas dict thành chuỗi text để đưa vào prompt"""
     lines = []
     for table_name, meta in full_schemas.items():
         lines.append(f"\n-- {table_name}")
@@ -33,7 +32,6 @@ def _format_full_schema(full_schemas: dict) -> str:
 
 
 def _count_columns(pruned_schema: str) -> int:
-    """Đếm số cột trong pruned schema"""
     return len(re.findall(r"^\s+\w+\s+\w+", pruned_schema, re.MULTILINE))
 
 
@@ -51,7 +49,6 @@ def column_pruner(state: AgentState) -> AgentState:
 
     full_schema_text = _format_full_schema(full_schemas)
 
-    # Đếm tổng cột trước khi prune
     total_cols_before = sum(
         len(m.get("columns", [])) for m in full_schemas.values()
     )
@@ -62,7 +59,6 @@ def column_pruner(state: AgentState) -> AgentState:
     )
     pruned = _llm.invoke(prompt).content.strip()
 
-    # Đếm cột sau prune
     cols_after = _count_columns(pruned)
     pruned_count = max(0, total_cols_before - cols_after)
 

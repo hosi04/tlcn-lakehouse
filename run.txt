@@ -7,3 +7,7 @@ streamlit run src/chatbot/frontend/ui.py
 
 
 trino://trino@trino:8080/iceberg
+
+python -m src.mlops.p1_revenue.train
+python -m src.mlops.p2_anomaly.train
+python -m src.mlops.p3_late_delivery.train

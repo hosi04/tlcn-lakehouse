@@ -6,7 +6,6 @@ import os
 from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.trino_connector import trino_query
 
-# Load YAML metadata local
 _METADATA_PATH = (
     Path(__file__).parent.parent.parent
     / "mcp_server"
@@ -15,7 +14,6 @@ _METADATA_PATH = (
 
 
 def _get_trino_columns(table_name: str) -> list[dict]:
-    """Lấy column info từ Trino information_schema"""
     parts = table_name.split(".")
     if len(parts) == 3:
         catalog, schema_name, tbl = parts
@@ -40,10 +38,6 @@ def _load_yaml() -> dict:
 
 
 def metadata_fetcher(state: AgentState) -> AgentState:
-    """
-    Fetch metadata cho từng bảng trong retrieved_tables.
-    Merge Trino structural info với YAML descriptions.
-    """
     retrieved_tables = state.get("retrieved_tables", [])
     yaml_data = _load_yaml()
     yaml_tables = yaml_data.get("tables", {})

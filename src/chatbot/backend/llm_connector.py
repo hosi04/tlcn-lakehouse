@@ -8,9 +8,6 @@ OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
 
 def get_llm():
-    """
-    Khởi tạo LLM dùng Ollama local (Self-hosted)
-    """
     print(f"[LLM] Dùng Ollama — model: {OLLAMA_MODEL} @ {OLLAMA_BASE_URL}")
     llm = ChatOllama(
         model=OLLAMA_MODEL,

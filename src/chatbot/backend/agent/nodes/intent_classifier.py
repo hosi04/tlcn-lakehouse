@@ -13,7 +13,6 @@ def intent_classifier(state: AgentState) -> AgentState:
     lines = [l.strip() for l in response.splitlines() if l.strip()]
     intent = lines[0].lower() if lines else "data_query"
 
-    # Normalize
     if intent not in ("data_query", "greeting", "out_of_scope"):
         intent = "data_query"
 
@@ -23,7 +22,6 @@ def intent_classifier(state: AgentState) -> AgentState:
         + [f"[intent_classifier] intent={intent}"],
     }
 
-    # Nếu không phải data query, lấy direct answer từ dòng thứ 2 trở đi
     if intent != "data_query" and len(lines) > 1:
         update["direct_answer"] = "\n".join(lines[1:])
     elif intent != "data_query":

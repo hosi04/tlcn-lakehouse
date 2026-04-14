@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Khởi tạo MCP server ────────────────────────────────────────────────────
 mcp = FastMCP(
     name="trino-lakehouse",
     instructions=(
@@ -20,15 +19,12 @@ mcp = FastMCP(
     ),
 )
 
-# ── Đường dẫn YAML metadata ─────────────────────────────────────────────────
 _METADATA_PATH = Path(__file__).parent / "schema_metadata.yaml"
 
 def _load_yaml_metadata() -> dict:
-    """Load schema_metadata.yaml"""
     with open(_METADATA_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-# ── Trino connection helper ─────────────────────────────────────────────────
 def _get_trino_conn():
     return connect(
         host=os.getenv("TRINO_HOST", "localhost"),
@@ -40,7 +36,6 @@ def _get_trino_conn():
 
 
 def _trino_fetchall(sql: str) -> list[dict]:
-    """Chạy SQL, trả về list of dicts"""
     conn = _get_trino_conn()
     cur = conn.cursor()
     cur.execute(sql)
@@ -49,21 +44,8 @@ def _trino_fetchall(sql: str) -> list[dict]:
     return [dict(zip(columns, row)) for row in rows]
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# TOOLS
-# ══════════════════════════════════════════════════════════════════════════════
-
 @mcp.tool()
 def list_tables(schema: str = "gold") -> list[str]:
-    """
-    Liệt kê tất cả bảng trong schema Iceberg.
-
-    Args:
-        schema: Tên schema cần liệt kê (mặc định: gold)
-
-    Returns:
-        Danh sách tên bảng dạng 'iceberg.<schema>.<table>'
-    """
     rows = _trino_fetchall(
         f"SELECT table_name FROM iceberg.information_schema.tables "
         f"WHERE table_schema = '{schema}' ORDER BY table_name"
@@ -73,22 +55,10 @@ def list_tables(schema: str = "gold") -> list[str]:
 
 @mcp.tool()
 def get_table_metadata(table_name: str) -> dict[str, Any]:
-    """
-    Lấy metadata đầy đủ của một bảng: thông tin cột từ Trino + mô tả ngữ nghĩa từ YAML.
-
-    Args:
-        table_name: Tên bảng đầy đủ dạng 'iceberg.gold.<table>' hoặc chỉ '<table>'
-
-    Returns:
-        Dict chứa: table_name, description, business_domain, columns (với type + description), join_hints
-    """
-    # Normalize table name
     if "." not in table_name:
         table_name = f"iceberg.gold.{table_name}"
     parts = table_name.split(".")
     catalog, schema_name, tbl = parts[0], parts[1], parts[2]
-
-    # 1. Lấy column info từ Trino information_schema
     col_rows = _trino_fetchall(
         f"SELECT column_name, data_type, ordinal_position "
         f"FROM {catalog}.information_schema.columns "
@@ -96,12 +66,9 @@ def get_table_metadata(table_name: str) -> dict[str, Any]:
         f"ORDER BY ordinal_position"
     )
 
-    # 2. Load YAML metadata
     yaml_meta = _load_yaml_metadata()
     table_yaml = yaml_meta.get("tables", {}).get(table_name, {})
     columns_yaml = table_yaml.get("columns", {})
-
-    # 3. Merge: Trino structural info + YAML descriptions
     columns_merged = []
     for row in col_rows:
         col_name = row["column_name"]
@@ -128,17 +95,6 @@ def get_table_metadata(table_name: str) -> dict[str, Any]:
 
 @mcp.tool()
 def execute_sql(sql: str) -> dict[str, Any]:
-    """
-    Thực thi SQL trên Trino và trả về kết quả.
-    Chỉ cho phép câu lệnh SELECT.
-
-    Args:
-        sql: Câu lệnh SQL SELECT hợp lệ cho Trino
-
-    Returns:
-        Dict chứa: success, columns, rows (list of dicts), row_count, error (nếu có)
-    """
-    # Safety check
     normalized = sql.strip().lower()
     if not normalized.startswith("select"):
         return {
@@ -175,15 +131,6 @@ def execute_sql(sql: str) -> dict[str, Any]:
 
 @mcp.tool()
 def validate_sql(sql: str) -> dict[str, Any]:
-    """
-    Validate SQL bằng EXPLAIN mà không thực thi thật (nhanh, ít tốn tài nguyên).
-
-    Args:
-        sql: Câu lệnh SQL cần kiểm tra
-
-    Returns:
-        Dict chứa: valid (bool), error (str hoặc None)
-    """
     try:
         conn = _get_trino_conn()
         cur = conn.cursor()
@@ -194,7 +141,5 @@ def validate_sql(sql: str) -> dict[str, Any]:
         return {"valid": False, "error": str(e)}
 
 
-# ── Entry point ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Chạy với stdio transport (dùng cho LangGraph agent local)
     mcp.run(transport="stdio")

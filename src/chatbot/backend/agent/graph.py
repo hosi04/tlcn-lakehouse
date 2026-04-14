@@ -11,17 +11,13 @@ from src.chatbot.backend.agent.nodes.visualization_selector import visualization
 from src.chatbot.backend.agent.nodes.report_generator import report_generator
 
 
-# ── Routing functions ────────────────────────────────────────────────────────
-
 def route_after_intent(state: AgentState) -> str:
-    """Sau intent classifier: nếu không phải data_query thì kết thúc sớm"""
     if state.get("intent") == "data_query":
         return "schema_retriever"
     return "end_early"
 
 
 def route_after_validation(state: AgentState) -> str:
-    """Sau SQL validator: retry, success, hoặc give_up"""
     result = should_retry(state)
     if result == "retry":
         return "sql_generator"    # Quay lại generate với error context
@@ -31,12 +27,8 @@ def route_after_validation(state: AgentState) -> str:
         return "report_generator"  # give_up → tạo báo cáo lỗi
 
 
-# ── Build Graph ──────────────────────────────────────────────────────────────
-
 def build_graph() -> StateGraph:
     workflow = StateGraph(AgentState)
-
-    # Đăng ký các nodes
     workflow.add_node("intent_classifier", intent_classifier)
     workflow.add_node("schema_retriever", schema_retriever)
     workflow.add_node("metadata_fetcher", metadata_fetcher)
@@ -46,10 +38,8 @@ def build_graph() -> StateGraph:
     workflow.add_node("visualization_selector", visualization_selector)
     workflow.add_node("report_generator", report_generator)
 
-    # Entry point
     workflow.set_entry_point("intent_classifier")
 
-    # Edges từ intent_classifier
     workflow.add_conditional_edges(
         "intent_classifier",
         route_after_intent,
@@ -59,13 +49,11 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # Linear pipeline: RAG → Metadata → Prune → Generate
     workflow.add_edge("schema_retriever", "metadata_fetcher")
     workflow.add_edge("metadata_fetcher", "column_pruner")
     workflow.add_edge("column_pruner", "sql_generator")
     workflow.add_edge("sql_generator", "sql_validator")
 
-    # Conditional: Validate → retry/success/give_up
     workflow.add_conditional_edges(
         "sql_validator",
         route_after_validation,
@@ -76,14 +64,12 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # Linear: Viz → Report → END
     workflow.add_edge("visualization_selector", "report_generator")
     workflow.add_edge("report_generator", END)
 
     return workflow
 
 
-# ── Compiled graph (singleton) ───────────────────────────────────────────────
 _compiled_graph = None
 
 
@@ -93,8 +79,6 @@ def get_graph():
         _compiled_graph = build_graph().compile()
     return _compiled_graph
 
-
-# ── Main entry function ──────────────────────────────────────────────────────
 
 def run_agent(question: str) -> AgentState:
     """

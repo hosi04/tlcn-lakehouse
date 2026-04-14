@@ -4,7 +4,7 @@ from src.chatbot.backend.agent.prompts import REPORT_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
 
 _llm = get_llm()
-_MAX_ROWS_IN_PROMPT = 20  # Giới hạn số dòng đưa vào prompt để tránh quá token
+_MAX_ROWS_IN_PROMPT = 20
 
 
 def _format_data_text(rows: list[dict], columns: list[str], max_rows: int) -> str:
@@ -12,7 +12,6 @@ def _format_data_text(rows: list[dict], columns: list[str], max_rows: int) -> st
         return "(Không có dữ liệu)"
 
     sample = rows[:max_rows]
-    # Dạng bảng text
     header = " | ".join(columns)
     sep = "-" * len(header)
     data_lines = [header, sep]
@@ -33,7 +32,6 @@ def report_generator(state: AgentState) -> AgentState:
     row_count = state.get("row_count", 0)
     sql_error = state.get("sql_error")
 
-    # Nếu SQL thất bại hoàn toàn sau 3 lần retry
     if sql_error and not query_result:
         report = (
             f"⚠️ **Không thể truy vấn dữ liệu**\n\n"
