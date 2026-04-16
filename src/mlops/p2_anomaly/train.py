@@ -6,6 +6,7 @@ import mlflow.pytorch
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import StandardScaler
 from dotenv import load_dotenv
 
@@ -17,12 +18,10 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
-EPOCHS          = 80
-LR              = 1e-3
-BATCH_SIZE      = 256
 ANOMALY_PERCENTILE = 95
-DEVICE          = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-EXPERIMENT      = "P2_Anomaly_Detection"
+EPOCHS             = 80
+DEVICE             = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+EXPERIMENT         = "P2_Anomaly_Detection"
 
 FEATURE_COLS = [
     "delivery_actual_days",
@@ -32,13 +31,19 @@ FEATURE_COLS = [
     "number_of_items",
 ]
 
+AE_GRID = ParameterGrid({
+    "lr":         [1e-3, 5e-4],
+    "batch_size": [128, 256],
+})
 
-def train_autoencoder(X_tensor: torch.Tensor) -> tuple[Autoencoder, list[float]]:
+
+def train_autoencoder(X_tensor: torch.Tensor, lr: float,
+                      batch_size: int) -> tuple:
     dataset    = TensorDataset(X_tensor)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     model     = Autoencoder(input_size=len(FEATURE_COLS)).to(DEVICE)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
     criterion = nn.MSELoss()
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
@@ -53,26 +58,24 @@ def train_autoencoder(X_tensor: torch.Tensor) -> tuple[Autoencoder, list[float]]
             loss.backward()
             optimizer.step()
             epoch_losses.append(loss.item())
-
         avg_loss = sum(epoch_losses) / len(epoch_losses)
         scheduler.step()
         history.append(avg_loss)
-
         if epoch % 10 == 0 or epoch == 1:
-            logger.info(f"  Epoch {epoch:3d}/{EPOCHS} | loss={avg_loss:.6f}")
+            logger.info(f"    Epoch {epoch:3d}/{EPOCHS} | loss={avg_loss:.6f}")
 
     return model, history
 
 
-def compute_threshold(model: Autoencoder, X_tensor: torch.Tensor) -> float:
+def compute_threshold(model: Autoencoder, X_tensor: torch.Tensor) -> tuple:
     model.eval()
     with torch.no_grad():
         errors = model.reconstruction_error(X_tensor.to(DEVICE)).cpu().numpy()
-    threshold = float(np.percentile(errors, ANOMALY_PERCENTILE))
-    n_anomaly = int((errors > threshold).sum())
+    threshold   = float(np.percentile(errors, ANOMALY_PERCENTILE))
+    n_anomaly   = int((errors > threshold).sum())
     anomaly_pct = n_anomaly / len(errors) * 100
     logger.info(
-        f"[Threshold] P{ANOMALY_PERCENTILE} = {threshold:.6f} "
+        f"  [Threshold] P{ANOMALY_PERCENTILE}={threshold:.6f} "
         f"| Anomalies: {n_anomaly}/{len(errors)} ({anomaly_pct:.1f}%)"
     )
     return threshold, errors
@@ -81,7 +84,7 @@ def compute_threshold(model: Autoencoder, X_tensor: torch.Tensor) -> float:
 if __name__ == "__main__":
     setup_mlflow(EXPERIMENT)
     logger.info("=" * 60)
-    logger.info("P2 — Anomaly Detection (Autoencoder)")
+    logger.info("P2 — Anomaly Detection (Autoencoder Grid Search)")
     logger.info("=" * 60)
 
     logger.info("\n[1/3] Loading data...")
@@ -89,54 +92,62 @@ if __name__ == "__main__":
     logger.info(f"      {len(df):,} orders loaded")
 
     logger.info("\n[2/3] Preprocessing (StandardScaler)...")
-    scaler  = StandardScaler()
+    scaler   = StandardScaler()
     X_scaled = scaler.fit_transform(df[FEATURE_COLS].values)
     X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
 
-    stats = df[FEATURE_COLS].describe()
-    logger.info(f"\n{stats.to_string()}")
+    logger.info(f"\n[3/3] Autoencoder Grid Search ({len(AE_GRID)} configs) on {DEVICE}...")
 
-    logger.info(f"\n[3/3] Training Autoencoder on {DEVICE}...")
-    with mlflow.start_run(run_name="Autoencoder"):
-        mlflow.log_param("model_type",          "autoencoder_pytorch")
-        mlflow.log_param("input_size",           len(FEATURE_COLS))
-        mlflow.log_param("bottleneck_size",      3)
-        mlflow.log_param("epochs",               EPOCHS)
-        mlflow.log_param("batch_size",           BATCH_SIZE)
-        mlflow.log_param("lr",                   LR)
-        mlflow.log_param("anomaly_percentile",   ANOMALY_PERCENTILE)
-        mlflow.log_param("n_samples",            len(df))
-        mlflow.log_param("features",             str(FEATURE_COLS))
+    best_loss, best_cfg, best_model = float("inf"), None, None
+    best_run_id = None
 
-        model, history = train_autoencoder(X_tensor)
+    with mlflow.start_run(run_name="Autoencoder_GridSearch") as parent:
+        logger.info(f"  Parent run: {parent.info.run_id}")
 
-        for epoch, loss in enumerate(history, 1):
-            mlflow.log_metric("train_loss", loss, step=epoch)
+        for i, cfg in enumerate(AE_GRID):
+            run_name = f"ae_lr{cfg['lr']}_bs{cfg['batch_size']}"
+            with mlflow.start_run(run_name=run_name, nested=True) as child:
+                logger.info(f"\n  [{i+1}/{len(AE_GRID)}] Config: {cfg}")
+                mlflow.log_params(cfg)
+                mlflow.log_param("model_type",        "autoencoder_pytorch")
+                mlflow.log_param("input_size",         len(FEATURE_COLS))
+                mlflow.log_param("bottleneck_size",    3)
+                mlflow.log_param("epochs",             EPOCHS)
+                mlflow.log_param("anomaly_percentile", ANOMALY_PERCENTILE)
+                mlflow.log_param("n_samples",          len(df))
+                mlflow.log_param("features",           str(FEATURE_COLS))
 
-        threshold, errors = compute_threshold(model, X_tensor)
-        mlflow.log_metric("reconstruction_error_mean",      float(errors.mean()))
-        mlflow.log_metric("reconstruction_error_std",       float(errors.std()))
-        mlflow.log_metric(f"threshold_p{ANOMALY_PERCENTILE}", threshold)
-        mlflow.log_metric("anomaly_count",   int((errors > threshold).sum()))
-        mlflow.log_metric("anomaly_rate_pct", float((errors > threshold).mean() * 100))
-        mlflow.log_metric("final_train_loss", history[-1])
+                model, history = train_autoencoder(X_tensor, **cfg)
 
-        mlflow.pytorch.log_model(
-            model,
-            artifact_path="model",
-            registered_model_name="anomaly_autoencoder",
-        )
+                for epoch, loss in enumerate(history, 1):
+                    mlflow.log_metric("train_loss", loss, step=epoch)
 
-        import json, tempfile, os
-        meta = {"threshold": threshold, "percentile": ANOMALY_PERCENTILE,
-                "feature_cols": FEATURE_COLS}
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump(meta, f)
-            tmp_path = f.name
-        mlflow.log_artifact(tmp_path, artifact_path="metadata")
-        os.unlink(tmp_path)
+                threshold, errors = compute_threshold(model, X_tensor)
+                final_loss = history[-1]
+                mlflow.log_metric("reconstruction_error_mean",       float(errors.mean()))
+                mlflow.log_metric("reconstruction_error_std",        float(errors.std()))
+                mlflow.log_metric(f"threshold_p{ANOMALY_PERCENTILE}", threshold)
+                mlflow.log_metric("anomaly_count",    int((errors > threshold).sum()))
+                mlflow.log_metric("anomaly_rate_pct", float((errors > threshold).mean() * 100))
+                mlflow.log_metric("final_train_loss", final_loss)
+                mlflow.pytorch.log_model(model, artifact_path="model")
 
-        logger.info("\n✅ Autoencoder training complete!")
-        logger.info(f"   Final loss      : {history[-1]:.6f}")
-        logger.info(f"   Anomaly threshold: {threshold:.6f}")
-        logger.info("   Mở MLflow UI tại http://localhost:5000 để xem.")
+                logger.info(f"    → Final Loss={final_loss:.6f} | Threshold={threshold:.6f}")
+
+                if final_loss < best_loss:
+                    best_loss   = final_loss
+                    best_cfg    = cfg
+                    best_model  = model
+                    best_run_id = child.info.run_id
+
+        mlflow.log_params({f"best_{k}": v for k, v in best_cfg.items()})
+        mlflow.log_metric("best_final_loss", best_loss)
+        logger.info(f"\n  ✅ Best: Loss={best_loss:.6f} | Config={best_cfg}")
+
+    mlflow.register_model(f"runs:/{best_run_id}/model", "anomaly_autoencoder")
+    logger.info("  📦 Registered model: anomaly_autoencoder")
+    logger.info("\n" + "=" * 60)
+    logger.info("GRID SEARCH SUMMARY")
+    logger.info(f"  Best Config  : {best_cfg}")
+    logger.info(f"  Best Loss    : {best_loss:.6f}")
+    logger.info("  Mở MLflow UI tại http://localhost:5000 để xem Nested Runs.")
