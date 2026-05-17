@@ -1,6 +1,7 @@
 # file: bronze_assets.py
 import os
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from minio import Minio
 from src.spark.utils import get_spark_session
@@ -32,16 +33,18 @@ def write_csv_to_iceberg(spark, file_path: str, table_name: str, namespace="iceb
         logger.error(f"Failed to write {file_path} to {full_table_name}: {e}")
         raise
 
+DATA_ROOT = Path(os.getenv("DATA_ROOT", "./data"))
+
 DATASETS = {
-    "olist_customers_dataset": "./data/olist_customers_dataset.csv",
-    "olist_sellers_dataset": "./data/olist_sellers_dataset.csv",
-    "olist_products_dataset": "./data/olist_products_dataset.csv",
-    "olist_orders_dataset": "./data/olist_orders_dataset.csv",
-    "olist_order_items_dataset": "./data/olist_order_items_dataset.csv",
-    "olist_order_payments_dataset": "./data/olist_order_payments_dataset.csv",
-    "olist_order_reviews_dataset": "./data/olist_order_reviews_dataset.csv",
-    "product_category_name_translation": "./data/product_category_name_translation.csv",
-    "olist_geolocation_dataset": "./data/olist_geolocation_dataset.csv"
+    "olist_customers_dataset": DATA_ROOT / "olist_customers_dataset.csv",
+    "olist_sellers_dataset": DATA_ROOT / "olist_sellers_dataset.csv",
+    "olist_products_dataset": DATA_ROOT / "olist_products_dataset.csv",
+    "olist_orders_dataset": DATA_ROOT / "olist_orders_dataset.csv",
+    "olist_order_items_dataset": DATA_ROOT / "olist_order_items_dataset.csv",
+    "olist_order_payments_dataset": DATA_ROOT / "olist_order_payments_dataset.csv",
+    "olist_order_reviews_dataset": DATA_ROOT / "olist_order_reviews_dataset.csv",
+    "product_category_name_translation": DATA_ROOT / "product_category_name_translation.csv",
+    "olist_geolocation_dataset": DATA_ROOT / "olist_geolocation_dataset.csv",
 }
 
 if __name__ == "__main__":
@@ -54,8 +57,9 @@ if __name__ == "__main__":
     logger.info("Starting Bronze layer processing...")
     
     try:
+        logger.info(f"Reading batch CSV files from: {DATA_ROOT}")
         for table_name, file_path in DATASETS.items():
-            write_csv_to_iceberg(spark, file_path, table_name)
+            write_csv_to_iceberg(spark, str(file_path), table_name)
         
         logger.info("Bronze layer processing completed successfully!")
     except Exception as e:

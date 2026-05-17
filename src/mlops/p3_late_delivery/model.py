@@ -6,12 +6,14 @@ class LateDeliveryLSTM(nn.Module):
 
     def __init__(
         self,
-        input_size:  int  = 5,  
-        hidden_size: int  = 32,
-        num_layers:  int  = 1,
+        input_size:  int   = 5,
+        hidden_size: int   = 32,
+        num_layers:  int   = 1,
         dropout:     float = 0.2,
     ):
         super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers  = num_layers
         self.lstm = nn.LSTM(
             input_size,
             hidden_size,
@@ -21,9 +23,8 @@ class LateDeliveryLSTM(nn.Module):
         )
         self.dropout = nn.Dropout(dropout)
         self.fc      = nn.Linear(hidden_size, 1)
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out, _ = self.lstm(x)
-        out    = self.dropout(out[:, -1, :])   
-        return self.sigmoid(self.fc(out))       
+        out    = self.dropout(out[:, -1, :])
+        return self.fc(out)

@@ -21,8 +21,5 @@ class AgentState(TypedDict, total=False):
     query_result: list[dict[str, Any]]  
     columns: list[str]                  
     row_count: int                      
-
-    chart_config: dict[str, Any]        
-    report: str                         
     schemas_used: list[str]             
     execution_log: list[str]            

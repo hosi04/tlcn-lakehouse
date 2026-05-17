@@ -4,6 +4,7 @@ import pandas as pd
 import mlflow
 import mlflow.pytorch
 import mlflow.sklearn
+import mlflow.lightgbm
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -26,14 +27,21 @@ TRAIN_RATIO = 0.8
 EPOCHS      = 60
 DEVICE      = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-FEATURE_COLS = ["week_of_year", "month", "is_weekend", "order_count"]
+CALENDAR_COLS = [
+    "week_of_year", "month",
+    "week_sin", "week_cos",
+    "month_sin", "month_cos",
+]
+HISTORICAL_COLS = ["weekly_revenue", "order_count", "weekend_order_ratio"]
+FEATURE_COLS = CALENDAR_COLS + HISTORICAL_COLS
 TARGET_COL   = "weekly_revenue"
 EXPERIMENT   = "P1_Revenue_Forecasting"
 
 LGB_GRID = ParameterGrid({
-    "learning_rate":    [0.01, 0.05],
-    "num_leaves":       [15, 31],
-    "min_data_in_leaf": [5, 10],
+    "learning_rate":    [0.01, 0.03, 0.05],
+    "num_leaves":       [3, 7, 15],
+    "min_data_in_leaf": [1, 3, 5],
+    "feature_fraction": [0.8, 1.0],
 })
 
 LSTM_GRID = ParameterGrid({
@@ -43,19 +51,42 @@ LSTM_GRID = ParameterGrid({
 
 
 def build_lag_features(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    for lag in [1, 2, 3, 4]:
-        df[f"lag_{lag}"] = df[TARGET_COL].shift(lag)
-    df["rolling_4"]     = df[TARGET_COL].shift(1).rolling(4).mean()
-    df["rolling_4_std"] = df[TARGET_COL].shift(1).rolling(4).std()
+    df = df.sort_values(["year", "week_of_year"]).copy()
+    df = add_calendar_features(df)
+    for lag in [1, 2, 3, 4, 8]:
+        df[f"revenue_lag_{lag}"] = df[TARGET_COL].shift(lag)
+        df[f"order_count_lag_{lag}"] = df["order_count"].shift(lag)
+        df[f"weekend_order_ratio_lag_{lag}"] = df["weekend_order_ratio"].shift(lag)
+    df["revenue_rolling_4"]     = df[TARGET_COL].shift(1).rolling(4).mean()
+    df["revenue_rolling_4_std"] = df[TARGET_COL].shift(1).rolling(4).std()
+    df["revenue_rolling_8"]     = df[TARGET_COL].shift(1).rolling(8).mean()
+    df["order_count_rolling_4"] = df["order_count"].shift(1).rolling(4).mean()
+    df["order_count_rolling_8"] = df["order_count"].shift(1).rolling(8).mean()
     return df.dropna().reset_index(drop=True)
 
 
+def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["week_sin"] = np.sin(2 * np.pi * df["week_of_year"] / 52)
+    df["week_cos"] = np.cos(2 * np.pi * df["week_of_year"] / 52)
+    df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
+    df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
+    return df
+
+
 def build_sequences(df: pd.DataFrame, seq_len: int):
+    df = df.sort_values(["year", "week_of_year"]).reset_index(drop=True)
+    df = add_calendar_features(df)
+    n_sequences = len(df) - seq_len
+    train_end   = int(n_sequences * TRAIN_RATIO) + seq_len
+
     feat_scaler   = MinMaxScaler()
     target_scaler = MinMaxScaler()
-    X_raw = feat_scaler.fit_transform(df[FEATURE_COLS].values)
-    y_raw = target_scaler.fit_transform(df[[TARGET_COL]].values)
+    feat_scaler.fit(df[FEATURE_COLS].values[:train_end])
+    target_scaler.fit(df[[TARGET_COL]].values[:train_end])
+    X_raw = feat_scaler.transform(df[FEATURE_COLS].values)
+    y_raw = target_scaler.transform(df[[TARGET_COL]].values)
+
     X_seq, y_seq = [], []
     for i in range(len(df) - seq_len):
         X_seq.append(X_raw[i: i + seq_len])
@@ -68,13 +99,22 @@ def build_sequences(df: pd.DataFrame, seq_len: int):
 
 
 def train_lightgbm(df: pd.DataFrame, learning_rate: float,
-                   num_leaves: int, min_data_in_leaf: int) -> dict:
+                   num_leaves: int, min_data_in_leaf: int,
+                   feature_fraction: float) -> dict:
     df_lag = build_lag_features(df)
-    lgb_features = FEATURE_COLS + [f"lag_{i}" for i in [1, 2, 3, 4]] + \
-                   ["rolling_4", "rolling_4_std"]
+    lgb_features = CALENDAR_COLS + \
+                   [f"revenue_lag_{i}" for i in [1, 2, 3, 4, 8]] + \
+                   [f"order_count_lag_{i}" for i in [1, 2, 3, 4, 8]] + \
+                   [f"weekend_order_ratio_lag_{i}" for i in [1, 2, 3, 4, 8]] + \
+                   [
+                       "revenue_rolling_4", "revenue_rolling_4_std",
+                       "revenue_rolling_8", "order_count_rolling_4",
+                       "order_count_rolling_8",
+                   ]
     split = int(len(df_lag) * TRAIN_RATIO)
     X_train, X_val = df_lag[lgb_features][:split], df_lag[lgb_features][split:]
     y_train, y_val = df_lag[TARGET_COL][:split],   df_lag[TARGET_COL][split:]
+    y_train_log = np.log1p(y_train)
 
     scaler = StandardScaler()
     X_train_s = scaler.fit_transform(X_train)
@@ -85,15 +125,21 @@ def train_lightgbm(df: pd.DataFrame, learning_rate: float,
         "learning_rate": learning_rate,
         "num_leaves": num_leaves,
         "min_data_in_leaf": min_data_in_leaf,
+        "feature_fraction": feature_fraction,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 1,
+        "lambda_l2": 1.0,
+        "seed": 42,
         "verbose": -1,
     }
-    lgb_train = lgb.Dataset(X_train_s, y_train)
-    lgb_val   = lgb.Dataset(X_val_s,   y_val, reference=lgb_train)
+    lgb_train = lgb.Dataset(X_train_s, y_train_log)
+    lgb_val   = lgb.Dataset(X_val_s,   np.log1p(y_val), reference=lgb_train)
     model = lgb.train(
         params, lgb_train, num_boost_round=300, valid_sets=[lgb_val],
         callbacks=[lgb.early_stopping(30, verbose=False), lgb.log_evaluation(50)],
     )
-    preds = model.predict(X_val_s)
+    preds = np.expm1(model.predict(X_val_s))
+    preds = np.maximum(preds, 0)
     rmse  = math.sqrt(mean_squared_error(y_val, preds))
     mae   = mean_absolute_error(y_val, preds)
     return {"model": model, "scaler": scaler, "rmse": rmse, "mae": mae,
@@ -113,7 +159,7 @@ def train_lstm(df: pd.DataFrame, lr: float, batch_size: int) -> dict:
 
     model     = RevenueLSTM(input_size=len(FEATURE_COLS)).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.MSELoss()
+    criterion = nn.HuberLoss(delta=0.5)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
 
     best_val_loss = float("inf")
@@ -171,7 +217,7 @@ def run_lightgbm_grid(df: pd.DataFrame) -> tuple:
                 result = train_lightgbm(df, **cfg)
                 mlflow.log_metric("rmse", result["rmse"])
                 mlflow.log_metric("mae",  result["mae"])
-                mlflow.sklearn.log_model(result["model"], artifact_path="model")
+                mlflow.lightgbm.log_model(result["model"], artifact_path="model")
                 logger.info(f"      → RMSE={result['rmse']:,.2f}  MAE={result['mae']:,.2f}")
                 if result["rmse"] < best_rmse:
                     best_rmse, best_cfg, best_result = result["rmse"], cfg, result
@@ -198,11 +244,11 @@ def run_lstm_grid(df: pd.DataFrame) -> tuple:
                 mlflow.log_params(cfg)
                 mlflow.log_param("model_type",  "lstm_pytorch")
                 mlflow.log_param("seq_len",     SEQ_LEN)
-                mlflow.log_param("hidden_size", 64)
-                mlflow.log_param("num_layers",  2)
                 mlflow.log_param("epochs",      EPOCHS)
                 mlflow.log_param("train_ratio", TRAIN_RATIO)
                 result = train_lstm(df, **cfg)
+                mlflow.log_param("hidden_size", result["model"].hidden_size)
+                mlflow.log_param("num_layers",  result["model"].num_layers)
                 mlflow.log_metric("rmse", result["rmse"])
                 mlflow.log_metric("mae",  result["mae"])
                 mlflow.pytorch.log_model(result["model"], artifact_path="model")
@@ -227,7 +273,7 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     logger.info("\n[1/3] Loading data from Iceberg Gold...")
-    df = load_revenue_data()
+    df = load_revenue_data().sort_values(["year", "week_of_year"]).reset_index(drop=True)
     logger.info(f"      {len(df)} weekly records | date range: "
                 f"{df['year'].min()}-W{df['week_of_year'].min()} → "
                 f"{df['year'].max()}-W{df['week_of_year'].max()}")

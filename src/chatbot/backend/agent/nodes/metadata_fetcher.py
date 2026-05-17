@@ -12,6 +12,9 @@ _METADATA_PATH = (
     / "schema_metadata.yaml"
 )
 
+# Cache YAML metadata — chỉ đọc file 1 lần khi module được load
+_yaml_cache: dict | None = None
+
 
 def _get_trino_columns(table_name: str) -> list[dict]:
     parts = table_name.split(".")
@@ -33,8 +36,11 @@ def _get_trino_columns(table_name: str) -> list[dict]:
 
 
 def _load_yaml() -> dict:
-    with open(_METADATA_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    global _yaml_cache
+    if _yaml_cache is None:
+        with open(_METADATA_PATH, "r", encoding="utf-8") as f:
+            _yaml_cache = yaml.safe_load(f)
+    return _yaml_cache
 
 
 def metadata_fetcher(state: AgentState) -> AgentState:

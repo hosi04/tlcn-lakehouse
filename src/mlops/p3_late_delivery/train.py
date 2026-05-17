@@ -28,14 +28,15 @@ EPOCHS      = 60
 DEVICE      = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 EXPERIMENT  = "P3_Late_Delivery_Prediction"
 
-FEATURE_COLS = [
+LABEL_COL = "is_late_week"
+
+SEQUENCE_FEATURE_COLS = [
     "avg_delivery_days",
     "avg_estimate_days",
     "order_count",
     "late_rate",
-    "is_late_week",
+    LABEL_COL,
 ]
-LABEL_COL = "is_late_week"
 
 LSTM_GRID = ParameterGrid({
     "lr":         [1e-3, 5e-4],
@@ -44,35 +45,37 @@ LSTM_GRID = ParameterGrid({
 
 
 def build_seller_sequences(df: pd.DataFrame, seq_len: int) -> tuple:
-    scaler = MinMaxScaler()
-    df_scaled = df.copy()
-    df_scaled[FEATURE_COLS] = scaler.fit_transform(df_scaled[FEATURE_COLS])
+    """Build seller windows from past weeks to predict the next week."""
+    X_list, y_list, label_time_keys = [], [], []
 
-    X_list, y_list = [], []
-    for seller_key, group in df_scaled.groupby("seller_key"):
+    for seller_key, group in df.groupby("seller_key"):
         group = group.sort_values(["year", "week_of_year"]).reset_index(drop=True)
         if len(group) < seq_len + 1:
             continue
         for i in range(len(group) - seq_len):
-            X_list.append(group[FEATURE_COLS].iloc[i: i + seq_len].values)
+            X_list.append(group[SEQUENCE_FEATURE_COLS].iloc[i: i + seq_len].values)
             y_list.append(int(group[LABEL_COL].iloc[i + seq_len]))
+            label_row = group.iloc[i + seq_len]
+            label_time_keys.append(int(label_row["year"]) * 100 + int(label_row["week_of_year"]))
 
     X = np.array(X_list, dtype=np.float32)
     y = np.array(y_list, dtype=np.float32).reshape(-1, 1)
+    label_time_keys = np.array(label_time_keys)
     logger.info(f"[sequences] {len(X)} samples | late_rate={y.mean()*100:.1f}%")
-    return X, y, scaler
+    return X, y, label_time_keys
 
 
 def train_model(X_tr, y_tr, X_val, y_val,
-                lr: float, batch_size: int) -> LateDeliveryLSTM:
+                lr: float, batch_size: int, pos_weight: float) -> LateDeliveryLSTM:
     ds_train = TensorDataset(torch.tensor(X_tr), torch.tensor(y_tr))
     ds_val   = TensorDataset(torch.tensor(X_val), torch.tensor(y_val))
     dl_train = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
     dl_val   = DataLoader(ds_val,   batch_size=batch_size)
 
-    model     = LateDeliveryLSTM(input_size=len(FEATURE_COLS)).to(DEVICE)
+    model     = LateDeliveryLSTM(input_size=len(SEQUENCE_FEATURE_COLS)).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.BCELoss()
+    pos_weight_tensor = torch.tensor([pos_weight], dtype=torch.float32).to(DEVICE)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=8, factor=0.5)
 
     best_val_loss = float("inf")
@@ -105,15 +108,38 @@ def train_model(X_tr, y_tr, X_val, y_val,
     return model
 
 
+def find_best_threshold(truth, probs, metric: str = "f1") -> tuple:
+    thresholds = np.arange(0.1, 0.91, 0.01)
+    best_threshold, best_score = 0.5, -1.0
+    for threshold in thresholds:
+        preds = (probs >= threshold).astype(int)
+        score = (
+            accuracy_score(truth, preds)
+            if metric == "accuracy"
+            else f1_score(truth, preds, zero_division=0)
+        )
+        if score > best_score:
+            best_threshold, best_score = float(threshold), float(score)
+    return best_threshold, best_score
+
+
 def evaluate(model: LateDeliveryLSTM, X_val, y_val) -> dict:
     model.eval()
     with torch.no_grad():
-        probs = model(torch.tensor(X_val).to(DEVICE)).cpu().numpy().flatten()
-    preds = (probs >= 0.5).astype(int)
+        logits = model(torch.tensor(X_val).to(DEVICE))
+        probs  = torch.sigmoid(logits).cpu().numpy().flatten()
     truth = y_val.flatten().astype(int)
+    best_f1_threshold, _ = find_best_threshold(truth, probs, metric="f1")
+    best_acc_threshold, _ = find_best_threshold(truth, probs, metric="accuracy")
+    preds = (probs >= best_f1_threshold).astype(int)
+    preds_05 = (probs >= 0.5).astype(int)
     report = classification_report(truth, preds, target_names=["Đúng hạn", "Giao trễ"])
     logger.info(f"\nClassification Report:\n{report}")
     return {
+        "threshold": best_f1_threshold,
+        "accuracy_at_0_5": accuracy_score(truth, preds_05),
+        "f1_at_0_5": f1_score(truth, preds_05, zero_division=0),
+        "best_accuracy_threshold": best_acc_threshold,
         "accuracy":  accuracy_score(truth, preds),
         "precision": precision_score(truth, preds, zero_division=0),
         "recall":    recall_score(truth, preds,    zero_division=0),
@@ -132,15 +158,26 @@ if __name__ == "__main__":
     df = load_late_delivery_data(min_weeks=SEQ_LEN + 1)
 
     logger.info(f"\n[2/3] Building sequences (seq_len={SEQ_LEN})...")
-    X, y, scaler = build_seller_sequences(df, SEQ_LEN)
+    X, y, label_time_keys = build_seller_sequences(df, SEQ_LEN)
 
-    split = int(len(X) * TRAIN_RATIO)
-    X_tr, X_val = X[:split], X[split:]
-    y_tr, y_val = y[:split], y[split:]
+    unique_time_keys = np.sort(np.unique(label_time_keys))
+    cutoff_idx = max(1, int(len(unique_time_keys) * TRAIN_RATIO))
+    cutoff_key = unique_time_keys[min(cutoff_idx, len(unique_time_keys) - 1)]
+    train_mask = label_time_keys < cutoff_key
+    val_mask   = label_time_keys >= cutoff_key
+    X_tr, X_val = X[train_mask], X[val_mask]
+    y_tr, y_val = y[train_mask], y[val_mask]
+
+    n_train, seq_len_dim, n_features = X_tr.shape
+    scaler     = MinMaxScaler()
+    X_tr_flat  = scaler.fit_transform(X_tr.reshape(-1, n_features))
+    X_val_flat = scaler.transform(X_val.reshape(-1, n_features))
+    X_tr       = X_tr_flat.reshape(n_train, seq_len_dim, n_features).astype(np.float32)
+    X_val      = X_val_flat.reshape(len(X_val), seq_len_dim, n_features).astype(np.float32)
 
     pos_count  = y_tr.sum()
     neg_count  = len(y_tr) - pos_count
-    pos_weight = neg_count / max(pos_count, 1)
+    pos_weight = float(neg_count / max(pos_count, 1))
     logger.info(f"  Train: {len(X_tr)} | Val: {len(X_val)}")
     logger.info(f"  Late ratio: {y.mean()*100:.1f}% | pos_weight: {pos_weight:.2f}")
 
@@ -159,14 +196,15 @@ if __name__ == "__main__":
                 mlflow.log_params(cfg)
                 mlflow.log_param("model_type",    "lstm_classifier_pytorch")
                 mlflow.log_param("seq_len",       SEQ_LEN)
-                mlflow.log_param("hidden_size",   32)
-                mlflow.log_param("num_layers",    1)
                 mlflow.log_param("epochs",        EPOCHS)
                 mlflow.log_param("train_ratio",   TRAIN_RATIO)
                 mlflow.log_param("n_samples",     len(X))
                 mlflow.log_param("late_rate_pct", round(float(y.mean() * 100), 2))
+                mlflow.log_param("pos_weight",    round(pos_weight, 4))
 
-                model   = train_model(X_tr, y_tr, X_val, y_val, **cfg)
+                model   = train_model(X_tr, y_tr, X_val, y_val, **cfg, pos_weight=pos_weight)
+                mlflow.log_param("hidden_size",   model.hidden_size)
+                mlflow.log_param("num_layers",    model.num_layers)
                 metrics = evaluate(model, X_val, y_val)
 
                 for k, v in metrics.items():
@@ -176,7 +214,8 @@ if __name__ == "__main__":
                 logger.info(
                     f"    → F1={metrics['f1']:.4f} | "
                     f"Acc={metrics['accuracy']:.4f} | "
-                    f"ROC-AUC={metrics['roc_auc']:.4f}"
+                    f"ROC-AUC={metrics['roc_auc']:.4f} | "
+                    f"Threshold={metrics['threshold']:.2f}"
                 )
 
                 if metrics["f1"] > best_f1:

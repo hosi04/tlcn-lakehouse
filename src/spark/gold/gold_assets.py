@@ -20,6 +20,7 @@ def write_to_iceberg(spark, df: DataFrame, table_name: str, namespace="iceberg.g
     col_count = len(df.columns)
     
     logger.info(f"Writing to {full_table_name} ({col_count} columns)")
+    spark.sql(f"DROP TABLE IF EXISTS {full_table_name}")
     df.write.format("iceberg").mode("overwrite").saveAsTable(full_table_name)
 
     try:
@@ -231,6 +232,7 @@ def fact_order_item(spark):
     )
     
     df = df.select(
+        xxhash64(col("o.order_id")).alias("order_key"),
         col("o.order_id").alias("order_id"),
         col("oi.order_item_id").alias("order_item_id"),
         col("c.customer_key"),
@@ -249,6 +251,7 @@ def fact_order_item(spark):
     
     df = df.select(
         "order_item_key",
+        "order_key",
         "order_id",
         "order_item_id",
         "customer_key",
@@ -330,6 +333,7 @@ def fact_order(spark):
     )
     
     df = df.select(
+        xxhash64(col("o.order_id")).alias("order_key"),
         col("o.order_id").alias("order_id"),
         col("c.customer_key"),
         col("purchase_date.date_key").alias("purchase_date_key"),
@@ -347,8 +351,6 @@ def fact_order(spark):
         col("delivery_estimate_days"),
         col("delivery_early_days")
     )
-    
-    df = df.withColumn("order_key", monotonically_increasing_id())
     
     df = df.select(
         "order_key",

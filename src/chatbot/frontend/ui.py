@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import plotly.express as px
 import json
 
 st.set_page_config(
@@ -147,9 +146,7 @@ with st.sidebar:
         "Doanh thu theo từng tháng năm 2018?",
         "Top 10 danh mục sản phẩm bán chạy nhất?",
         "Tỷ lệ các phương thức thanh toán?",
-        "Trạng thái đơn hàng phân phối như thế nào?",
         "Tổng doanh thu của toàn bộ hệ thống?",
-        "Seller nào có doanh thu cao nhất?",
         "Thời gian giao hàng trung bình theo tháng?",
     ]
     for q in sample_questions:
@@ -181,125 +178,25 @@ st.markdown("""
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-def render_chart(chart_config: dict, df: pd.DataFrame):
-    if not chart_config or df.empty:
-        return
 
-    chart_type = chart_config.get("chart_type", "table")
-    x          = chart_config.get("x")
-    y          = chart_config.get("y")
-    color      = chart_config.get("color")
-    title      = chart_config.get("title", "")
-    x_label    = chart_config.get("x_label") or x or ""
-    y_label    = chart_config.get("y_label") or (y if isinstance(y, str) else "")
 
-    plotly_theme = "plotly_dark"
-    fig = None
-
-    try:
-        if chart_type == "line":
-            fig = px.line(
-                df, x=x, y=y, color=color, title=title,
-                labels={x: x_label, (y if isinstance(y, str) else "_"): y_label},
-                template=plotly_theme, markers=True,
-                color_discrete_sequence=px.colors.qualitative.Vivid,
-            )
-
-        elif chart_type in ("bar", "bar_vertical"):
-            fig = px.bar(
-                df, x=x, y=y, color=color, title=title,
-                labels={x: x_label, (y if isinstance(y, str) else "_"): y_label},
-                template=plotly_theme,
-                color_discrete_sequence=px.colors.qualitative.Vivid,
-            )
-
-        elif chart_type == "bar_horizontal":
-            fig = px.bar(
-                df, x=y, y=x, color=color, title=title,
-                orientation="h", template=plotly_theme,
-                color_discrete_sequence=px.colors.qualitative.Vivid,
-            )
-
-        elif chart_type == "pie":
-            names_col  = x or (df.columns[0] if len(df.columns) > 0 else None)
-            values_col = y or (df.columns[1] if len(df.columns) > 1 else None)
-            if names_col and values_col:
-                fig = px.pie(
-                    df, names=names_col, values=values_col, title=title,
-                    template=plotly_theme,
-                    color_discrete_sequence=px.colors.qualitative.Vivid,
-                    hole=0.35,
-                )
-
-        elif chart_type == "scatter":
-            fig = px.scatter(
-                df, x=x, y=y, color=color, title=title,
-                template=plotly_theme,
-                color_discrete_sequence=px.colors.qualitative.Vivid,
-            )
-
-        elif chart_type == "kpi":
-            kpi_val = chart_config.get("kpi_value")
-            if kpi_val is None and not df.empty:
-                kpi_val = df.iloc[0, 0]
-            try:
-                num = float(kpi_val)
-                if num >= 1_000_000:
-                    display = f"{num / 1_000_000:,.2f}M"
-                elif num >= 1_000:
-                    display = f"{num:,.0f}"
-                else:
-                    display = f"{num:,.2f}"
-            except Exception:
-                display = str(kpi_val)
-
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-value'>{display}</div>
-                <div class='kpi-label'>{title}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            return
-
-        if fig:
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(15,17,23,0.6)",
-                font_color="#cbd5e1",
-                title_font_size=14,
-                font_family="Inter",
-                margin=dict(l=20, r=20, t=40, b=20),
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-    except Exception as e:
-        st.warning(f"Không thể render chart: {e}")
-
-def render_assistant_message(msg: dict):
+def render_assistant_message(msg: dict, msg_idx: int = 0):
     intent = msg.get("intent", "data_query")
 
     if intent != "data_query":
-        st.markdown(msg.get("report", ""))
+        st.markdown(msg.get("direct_answer", msg.get("error_msg", "Tôi không thể xử lý câu hỏi này.")))
         return
 
-    report = msg.get("report", "")
-    if report:
-        st.markdown("<div class='report-label'>📝 Phân tích &amp; Báo cáo</div>",
-                    unsafe_allow_html=True)
-        with st.container():
-            st.markdown(report)
+    sql = msg.get("sql")
+    if sql:
+        st.markdown("**💻 SQL Query:**")
+        st.code(sql, language="sql")
 
-    chart_config = msg.get("chart_config")
-    rows         = msg.get("rows", [])
-    columns      = msg.get("columns", [])
+    rows    = msg.get("rows", [])
+    columns = msg.get("columns", [])
     if rows and columns:
         df = pd.DataFrame(rows, columns=columns)
         df = df.dropna(how="all")
-
-        if chart_config and chart_config.get("chart_type") != "table":
-            st.markdown("**📊 Biểu đồ**")
-            render_chart(chart_config, df)
-
         with st.expander("📋 Xem bảng dữ liệu", expanded=False):
             st.dataframe(df, use_container_width=True, height=250)
 
@@ -328,10 +225,10 @@ def render_debug_panel(msg: dict):
             for entry in log:
                 st.text(entry)
 
-for message in st.session_state.chat_history:
+for i, message in enumerate(st.session_state.chat_history):
     with st.chat_message(message["role"]):
         if message["role"] == "assistant":
-            render_assistant_message(message)
+            render_assistant_message(message, msg_idx=i)
             if show_debug:
                 render_debug_panel(message)
         else:
@@ -359,7 +256,7 @@ if user_input:
                 data = resp.json()
 
                 msg = {"role": "assistant", **data}
-                render_assistant_message(msg)
+                render_assistant_message(msg, msg_idx=len(st.session_state.chat_history))
                 if show_debug:
                     render_debug_panel(msg)
 

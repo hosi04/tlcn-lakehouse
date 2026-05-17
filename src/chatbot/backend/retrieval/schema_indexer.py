@@ -14,15 +14,24 @@ _STORE_PATH = Path(__file__).parent.parent / "schema_store"
 
 SCHEMA_COLLECTION = "lakehouse_schemas"
 SQL_SAMPLE_COLLECTION = "sql_samples"
+_embedding_function_instance = None
+_client_instance = None
+
 def _get_embedding_function():
-    return embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name="all-MiniLM-L6-v2"
-    )
+    global _embedding_function_instance
+    if _embedding_function_instance is None:
+        _embedding_function_instance = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="all-MiniLM-L6-v2"
+        )
+    return _embedding_function_instance
 
 
 def _get_client() -> chromadb.PersistentClient:
-    _STORE_PATH.mkdir(parents=True, exist_ok=True)
-    return chromadb.PersistentClient(path=str(_STORE_PATH))
+    global _client_instance
+    if _client_instance is None:
+        _STORE_PATH.mkdir(parents=True, exist_ok=True)
+        _client_instance = chromadb.PersistentClient(path=str(_STORE_PATH))
+    return _client_instance
 
 
 def _build_schema_document(table_name: str, table_meta: dict) -> tuple[str, dict]:

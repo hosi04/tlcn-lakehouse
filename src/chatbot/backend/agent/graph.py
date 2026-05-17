@@ -7,8 +7,6 @@ from src.chatbot.backend.agent.nodes.metadata_fetcher import metadata_fetcher
 from src.chatbot.backend.agent.nodes.column_pruner import column_pruner
 from src.chatbot.backend.agent.nodes.sql_generator import sql_generator
 from src.chatbot.backend.agent.nodes.sql_validator import sql_validator, should_retry
-from src.chatbot.backend.agent.nodes.visualization_selector import visualization_selector
-from src.chatbot.backend.agent.nodes.report_generator import report_generator
 
 
 def route_after_intent(state: AgentState) -> str:
@@ -22,9 +20,9 @@ def route_after_validation(state: AgentState) -> str:
     if result == "retry":
         return "sql_generator"    # Quay lại generate với error context
     elif result == "success":
-        return "visualization_selector"
+        return "end"
     else:
-        return "report_generator"  # give_up → tạo báo cáo lỗi
+        return "end"
 
 
 def build_graph() -> StateGraph:
@@ -35,8 +33,6 @@ def build_graph() -> StateGraph:
     workflow.add_node("column_pruner", column_pruner)
     workflow.add_node("sql_generator", sql_generator)
     workflow.add_node("sql_validator", sql_validator)
-    workflow.add_node("visualization_selector", visualization_selector)
-    workflow.add_node("report_generator", report_generator)
 
     workflow.set_entry_point("intent_classifier")
 
@@ -59,13 +55,9 @@ def build_graph() -> StateGraph:
         route_after_validation,
         {
             "sql_generator": "sql_generator",         # retry
-            "visualization_selector": "visualization_selector",  # success
-            "report_generator": "report_generator",   # give_up
+            "end": END,                               # success / give_up
         },
     )
-
-    workflow.add_edge("visualization_selector", "report_generator")
-    workflow.add_edge("report_generator", END)
 
     return workflow
 

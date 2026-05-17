@@ -13,6 +13,7 @@ def get_spark_session(app_name: str = "Lakehouse App") -> SparkSession:
     """
     jar_packages = [
         "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1",
+        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3",
         "software.amazon.awssdk:s3:2.20.125",
         "org.apache.hadoop:hadoop-aws:3.3.1"
     ]
