@@ -218,6 +218,7 @@ def run_lightgbm_grid(df: pd.DataFrame) -> tuple:
                 mlflow.log_metric("rmse", result["rmse"])
                 mlflow.log_metric("mae",  result["mae"])
                 mlflow.lightgbm.log_model(result["model"], artifact_path="model")
+                mlflow.sklearn.log_model(result["scaler"], artifact_path="scaler")
                 logger.info(f"      → RMSE={result['rmse']:,.2f}  MAE={result['mae']:,.2f}")
                 if result["rmse"] < best_rmse:
                     best_rmse, best_cfg, best_result = result["rmse"], cfg, result
@@ -252,6 +253,8 @@ def run_lstm_grid(df: pd.DataFrame) -> tuple:
                 mlflow.log_metric("rmse", result["rmse"])
                 mlflow.log_metric("mae",  result["mae"])
                 mlflow.pytorch.log_model(result["model"], artifact_path="model")
+                mlflow.sklearn.log_model(result["feat_scaler"],   artifact_path="feat_scaler")
+                mlflow.sklearn.log_model(result["target_scaler"], artifact_path="target_scaler")
                 logger.info(f"      → RMSE={result['rmse']:,.2f}  MAE={result['mae']:,.2f}")
                 if result["rmse"] < best_rmse:
                     best_rmse, best_cfg, best_result = result["rmse"], cfg, result

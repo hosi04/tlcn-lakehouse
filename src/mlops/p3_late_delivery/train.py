@@ -210,6 +210,7 @@ if __name__ == "__main__":
                 for k, v in metrics.items():
                     mlflow.log_metric(k, round(v, 4))
                 mlflow.pytorch.log_model(model, artifact_path="model")
+                mlflow.sklearn.log_model(scaler, artifact_path="scaler")
 
                 logger.info(
                     f"    → F1={metrics['f1']:.4f} | "
