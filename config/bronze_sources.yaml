@@ -1,0 +1,72 @@
+sources:
+  - name: olist_customers_dataset
+    path: olist_customers_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_customers_dataset
+
+  - name: olist_sellers_dataset
+    path: olist_sellers_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_sellers_dataset
+
+  - name: olist_products_dataset
+    path: olist_products_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_products_dataset
+
+  - name: olist_orders_dataset
+    path: olist_orders_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_orders_dataset
+
+  - name: olist_order_items_dataset
+    path: olist_order_items_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_order_items_dataset
+
+  - name: olist_order_payments_dataset
+    path: olist_order_payments_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_order_payments_dataset
+
+  - name: olist_order_reviews_dataset
+    path: olist_order_reviews_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_order_reviews_dataset
+
+  - name: product_category_name_translation
+    path: product_category_name_translation.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: product_category_name_translation
+
+  - name: olist_geolocation_dataset
+    path: olist_geolocation_dataset.csv
+    format: csv
+    options:
+      header: "true"
+      inferSchema: "true"
+    target: olist_geolocation_dataset

@@ -1,0 +1,71 @@
+tables:
+
+
+  - source: olist_customers_dataset
+    target: customers
+    drop_nulls: true
+    drop_duplicates: true
+
+  - source: olist_sellers_dataset
+    target: sellers
+    drop_nulls: true
+    drop_duplicates:
+      subset: [seller_id]
+
+  - source: olist_products_dataset
+    target: products
+    drop_nulls: true
+    drop_duplicates: true
+    casts:
+      product_description_length: integer
+      product_length_cm: integer
+      product_height_cm: integer
+      product_width_cm: integer
+
+  - source: olist_order_items_dataset
+    target: order_items
+    round:
+      price:
+        scale: 2
+        type: double
+      freight_value:
+        scale: 2
+        type: double
+    drop_nulls: true
+    drop_duplicates: true
+
+  - source: olist_order_payments_dataset
+    target: payments
+    round:
+      payment_value:
+        scale: 2
+        type: double
+    casts:
+      payment_installments: integer
+    drop_nulls: true
+
+  - source: olist_order_reviews_dataset
+    target: order_reviews
+    casts:
+      review_score: integer
+    drop_columns: [review_comment_title]
+    drop_nulls: true
+
+  - source: product_category_name_translation
+    target: product_category
+    drop_duplicates: true
+    drop_nulls: true
+
+  - source: olist_orders_dataset
+    target: orders
+    drop_nulls: true
+    drop_duplicates:
+      subset: [order_id]
+
+  - source: olist_orders_dataset
+    target: date
+    custom_transform: date_from_orders
+
+  - source: olist_geolocation_dataset
+    target: geolocation
+    custom_transform: geolocation_brazil_zip_agg
