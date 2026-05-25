@@ -145,10 +145,6 @@ def build_purchase_event(user_id, dt, platform, channel, cart_items) -> dict:
 
 
 def simulate_session(base_dt: datetime) -> list[dict]:
-    """
-    Simulate one user session with a realistic purchase funnel.
-    Returns events ordered by time.
-    """
     events      = []
     user_id     = _random_user()
     platform    = random.choices(PLATFORMS, weights=[55, 30, 15])[0]
@@ -157,7 +153,6 @@ def simulate_session(base_dt: datetime) -> list[dict]:
     cart_id     = str(uuid.uuid4())
     cart_items  = []
 
-    # 1. Search or view category (50/50)
     if random.random() < 0.5:
         events.append(build_search_event(user_id, cursor_dt, platform, channel))
         cursor_dt += timedelta(seconds=random.uniform(5, 15))
@@ -166,31 +161,26 @@ def simulate_session(base_dt: datetime) -> list[dict]:
         events.append(build_view_category_event(user_id, cursor_dt, platform, channel, cat))
         cursor_dt += timedelta(seconds=random.uniform(5, 20))
 
-    # 2. View 1-4 products
     viewed_products = random.sample(PRODUCTS, k=random.randint(1, 4))
     for product in viewed_products:
         events.append(build_view_item_event(user_id, cursor_dt, platform, channel, product))
         cursor_dt += timedelta(seconds=random.uniform(10, 60))
 
-        # 3. Add to cart (40% chance per product)
         if random.random() < 0.40:
             qty = random.randint(1, 3)
             events.append(build_add_to_cart_event(user_id, cursor_dt, platform, channel, product, cart_id))
             cart_items.append({"product_id": product["product_id"], "price": product["price"], "qty": qty})
             cursor_dt += timedelta(seconds=random.uniform(2, 10))
 
-            # 4. Remove from cart (15% chance after add)
             if random.random() < 0.15 and cart_items:
                 events.append(build_remove_from_cart_event(user_id, cursor_dt, platform, channel, product, cart_id))
                 cart_items = [c for c in cart_items if c["product_id"] != product["product_id"]]
                 cursor_dt += timedelta(seconds=random.uniform(2, 8))
 
-    # 5. Begin checkout when cart is non-empty (70% proceed)
     if cart_items and random.random() < 0.70:
         events.append(build_begin_checkout_event(user_id, cursor_dt, platform, channel, cart_items))
         cursor_dt += timedelta(seconds=random.uniform(30, 120))
 
-        # 6. Purchase (80% complete after begin_checkout)
         if random.random() < 0.80:
             events.append(build_purchase_event(user_id, cursor_dt, platform, channel, cart_items))
 
@@ -198,7 +188,6 @@ def simulate_session(base_dt: datetime) -> list[dict]:
 
 
 def preview_events(count: int = 2) -> None:
-    """Print sample events to stdout (no Kafka)."""
     now = datetime.now(timezone.utc)
     session_events = simulate_session(now)
     samples = session_events[:count]
@@ -214,7 +203,6 @@ def preview_events(count: int = 2) -> None:
 
 
 def _throttle_delay_seconds() -> float:
-    """Pause between sends so we do not flood Kafka (slight jitter)."""
     if config.PRODUCE_DELAY_MS > 0:
         base = config.PRODUCE_DELAY_MS / 1000.0
     else:
