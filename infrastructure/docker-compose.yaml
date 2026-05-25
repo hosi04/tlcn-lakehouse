@@ -30,7 +30,7 @@ services:
     container_name: trino
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8085:8080"
     volumes:
       - ./trino/etc:/usr/lib/trino/etc:ro
       - ./trino/catalog:/etc/trino/catalog
@@ -97,7 +97,7 @@ services:
       - lakehouse-network
 
   metastore-db:
-    image: postgres:14
+    image: postgres:13
     container_name: metastore-db
     restart: unless-stopped
     healthcheck:

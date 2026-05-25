@@ -1,5 +1,11 @@
-python -m  src.spark.bronze.bronze_assets
-python -m  src.spark.silver.silver_assets
+# Terminal 1: Spark streaming Kafka -> bronze (long-running)
+python -m src.spark.bronze.bronze_events
+
+# Terminal 2: produce events in parallel
+python -m src.streaming.generator
+python -m src.spark.bronze.bronze_assets
+python -m src.spark.silver.silver_events
+python -m src.spark.silver.silver_assets
 python -m  src.spark.gold.gold_assets
 
 uvicorn src.chatbot.backend.app:app --host 0.0.0.0 --port 8000
