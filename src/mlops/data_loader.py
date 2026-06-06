@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from pyspark.sql import SparkSession
-from src.etl.utils import get_spark_session
+from src.spark.utils import get_spark_session
 
 logger = logging.getLogger(__name__)
 

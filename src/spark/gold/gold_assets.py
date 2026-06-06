@@ -2,7 +2,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import *
 import logging
 from dotenv import load_dotenv
-from src.etl.utils import get_spark_session
+from src.spark.utils import get_spark_session
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")

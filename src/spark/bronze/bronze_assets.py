@@ -6,7 +6,7 @@ import yaml
 from dotenv import load_dotenv
 from minio import Minio
 
-from src.etl.utils import get_spark_session
+from src.spark.utils import get_spark_session
 
 logging.basicConfig(
     level=logging.INFO,
