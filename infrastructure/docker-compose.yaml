@@ -30,7 +30,7 @@ services:
     container_name: trino
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8085:8080"
     volumes:
       - ./trino/etc:/usr/lib/trino/etc:ro
       - ./trino/catalog:/etc/trino/catalog
@@ -97,7 +97,7 @@ services:
       - lakehouse-network
 
   metastore-db:
-    image: postgres:14
+    image: postgres:13
     container_name: metastore-db
     restart: unless-stopped
     healthcheck:
@@ -177,7 +177,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -241,10 +241,12 @@ services:
       dockerfile: Dockerfile
     container_name: airflow-init
     restart: "no"
+    user: "0:0"
     depends_on:
       airflow-db:
         condition: service_healthy
     environment:
+      AIRFLOW_UID: ${AIRFLOW_UID:-50000}
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
       AIRFLOW__CORE__FERNET_KEY: "46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLt1-pAAoM="
@@ -255,9 +257,9 @@ services:
       _AIRFLOW_WWW_USER_USERNAME: airflow
       _AIRFLOW_WWW_USER_PASSWORD: airflow
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
+      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/logs:/opt/airflow/logs
+      - ../airflow/plugins:/opt/airflow/plugins
     command: version
     networks:
       - lakehouse-network
@@ -268,6 +270,7 @@ services:
       dockerfile: Dockerfile
     container_name: airflow-webserver
     restart: unless-stopped
+    user: "${AIRFLOW_UID:-50000}:0"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s
@@ -279,6 +282,10 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+      hive-metastore:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
@@ -286,12 +293,19 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "lakehouse_secret_key_2025"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      LAKEHOUSE_PROJECT_DIR: /opt/project
+      PYTHONPATH: /opt/project
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+      HIVE_METASTORE_URI: thrift://hive-metastore:9083
     ports:
       - "8082:8080"
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
+      - ../airflow/dags:/opt/airflow/dags
+      - ../:/opt/project
+      - ../airflow/logs:/opt/airflow/logs
+      - ../airflow/plugins:/opt/airflow/plugins
     command: webserver
     networks:
       - lakehouse-network
@@ -302,6 +316,7 @@ services:
       dockerfile: Dockerfile
     container_name: airflow-scheduler
     restart: unless-stopped
+    user: "${AIRFLOW_UID:-50000}:0"
     healthcheck:
       test: [ "CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\"" ]
       interval: 30s
@@ -313,16 +328,27 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+      hive-metastore:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
       AIRFLOW__CORE__FERNET_KEY: "46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLt1-pAAoM="
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "lakehouse_secret_key_2025"
+      LAKEHOUSE_PROJECT_DIR: /opt/project
+      PYTHONPATH: /opt/project
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+      HIVE_METASTORE_URI: thrift://hive-metastore:9083
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
+      - ../airflow/dags:/opt/airflow/dags
+      - ../:/opt/project
+      - ../airflow/logs:/opt/airflow/logs
+      - ../airflow/plugins:/opt/airflow/plugins
     command: scheduler
     networks:
       - lakehouse-network

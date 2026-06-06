@@ -5,13 +5,16 @@ USER root
 RUN apt-get update && \
   apt-get install -y \
   curl \
-  wget && \
+  wget \
+  openjdk-17-jre-headless && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
 USER airflow
 
-# Dùng constraint file của Airflow 2.9.3 để tránh xung đột dependency
 ARG AIRFLOW_VERSION=2.9.3
 ARG PYTHON_VERSION=3.11
 ARG CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
@@ -28,4 +31,6 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir \
   boto3 \
   psycopg2-binary \
-  mlflow-skinny
+  mlflow-skinny \
+  pyspark==3.5.3 \
+  python-dotenv
