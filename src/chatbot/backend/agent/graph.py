@@ -1,63 +1,40 @@
 from langgraph.graph import StateGraph, END
 
 from src.chatbot.backend.agent.state import AgentState
-from src.chatbot.backend.agent.nodes.intent_classifier import intent_classifier
-from src.chatbot.backend.agent.nodes.schema_retriever_node import schema_retriever
-from src.chatbot.backend.agent.nodes.metadata_fetcher import metadata_fetcher
-from src.chatbot.backend.agent.nodes.column_pruner import column_pruner
-from src.chatbot.backend.agent.nodes.sql_generator import sql_generator
-from src.chatbot.backend.agent.nodes.sql_validator import sql_validator, should_retry
+from src.chatbot.backend.agent.agents.supervisor import build_supervisor
+from src.chatbot.backend.agent.agents.retrieval_agent import build_retrieval_agent
+from src.chatbot.backend.agent.agents.sql_agent import build_sql_agent
+from src.chatbot.backend.agent.agents.analyst_agent import analyst_agent
 
 
-def route_after_intent(state: AgentState) -> str:
+def _route_after_supervisor(state: AgentState) -> str:
     if state.get("intent") == "data_query":
-        return "schema_retriever"
+        return "retrieval_agent"
     return "end_early"
-
-
-def route_after_validation(state: AgentState) -> str:
-    result = should_retry(state)
-    if result == "retry":
-        return "sql_generator"    # Quay lại generate với error context
-    elif result == "success":
-        return "end"
-    else:
-        return "end"
 
 
 def build_graph() -> StateGraph:
     workflow = StateGraph(AgentState)
-    workflow.add_node("intent_classifier", intent_classifier)
-    workflow.add_node("schema_retriever", schema_retriever)
-    workflow.add_node("metadata_fetcher", metadata_fetcher)
-    workflow.add_node("column_pruner", column_pruner)
-    workflow.add_node("sql_generator", sql_generator)
-    workflow.add_node("sql_validator", sql_validator)
 
-    workflow.set_entry_point("intent_classifier")
+    workflow.add_node("supervisor", build_supervisor())
+    workflow.add_node("retrieval_agent", build_retrieval_agent())
+    workflow.add_node("sql_agent", build_sql_agent())
+    workflow.add_node("analyst_agent", analyst_agent)
+
+    workflow.set_entry_point("supervisor")
 
     workflow.add_conditional_edges(
-        "intent_classifier",
-        route_after_intent,
+        "supervisor",
+        _route_after_supervisor,
         {
-            "schema_retriever": "schema_retriever",
+            "retrieval_agent": "retrieval_agent",
             "end_early": END,
         },
     )
 
-    workflow.add_edge("schema_retriever", "metadata_fetcher")
-    workflow.add_edge("metadata_fetcher", "column_pruner")
-    workflow.add_edge("column_pruner", "sql_generator")
-    workflow.add_edge("sql_generator", "sql_validator")
-
-    workflow.add_conditional_edges(
-        "sql_validator",
-        route_after_validation,
-        {
-            "sql_generator": "sql_generator",         # retry
-            "end": END,                               # success / give_up
-        },
-    )
+    workflow.add_edge("retrieval_agent", "sql_agent")
+    workflow.add_edge("sql_agent", "analyst_agent")
+    workflow.add_edge("analyst_agent", END)
 
     return workflow
 
@@ -72,19 +49,11 @@ def get_graph():
     return _compiled_graph
 
 
-def run_agent(question: str) -> AgentState:
-    """
-    Chạy toàn bộ NL2SQL agent pipeline.
-
-    Args:
-        question: Câu hỏi tiếng Việt của người dùng
-
-    Returns:
-        AgentState dict với đầy đủ: sql, query_result, chart_config, report
-    """
+def run_agent(question: str, chat_history: list = None) -> AgentState:
     graph = get_graph()
     initial_state: AgentState = {
         "question": question,
+        "chat_history": chat_history or [],
         "retry_count": 0,
         "execution_log": [],
     }

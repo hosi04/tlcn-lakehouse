@@ -1,6 +1,6 @@
-python -m  src.spark.bronze.bronze_assets
-python -m  src.spark.silver.silver_assets
-python -m  src.spark.gold.gold_assets
+python -m  src.etl.bronze.bronze_assets
+python -m  src.etl.silver.silver_assets
+python -m  src.etl.gold.gold_assets
 
 uvicorn src.chatbot.backend.app:app --host 0.0.0.0 --port 8000
 streamlit run src/chatbot/frontend/ui.py
@@ -8,6 +8,6 @@ streamlit run src/chatbot/frontend/ui.py
 
 trino://trino@trino:8080/iceberg
 
-python -m src.mlops.p1_revenue.train
-python -m src.mlops.p2_anomaly.train
-python -m src.mlops.p3_late_delivery.train
+python -m src.mlops.revenue.trainer_lightgbm
+python -m src.mlops.revenue.trainer_lstm
+python -m src.mlops.revenue.trainer_prophet

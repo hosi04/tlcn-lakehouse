@@ -168,6 +168,25 @@ def get_sql_sample_collection() -> chromadb.Collection:
     )
 
 
+def ensure_index_ready(force_rebuild: bool = False) -> dict:
+    client = _get_client()
+    ef = _get_embedding_function()
+    if force_rebuild:
+        build_index(force_rebuild=True)
+    else:
+        schema_collection = get_collection()
+        sql_collection = get_sql_sample_collection()
+        if schema_collection.count() == 0 or sql_collection.count() == 0:
+            build_index(force_rebuild=True)
+
+    schema_collection = client.get_collection(SCHEMA_COLLECTION, embedding_function=ef)
+    sql_collection = client.get_collection(SQL_SAMPLE_COLLECTION, embedding_function=ef)
+    return {
+        "schema_count": schema_collection.count(),
+        "sql_sample_count": sql_collection.count(),
+    }
+
+
 def build_index(force_rebuild: bool = False):
     client = _get_client()
     ef = _get_embedding_function()

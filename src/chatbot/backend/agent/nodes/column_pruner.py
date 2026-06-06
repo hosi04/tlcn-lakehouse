@@ -36,7 +36,7 @@ def _count_columns(pruned_schema: str) -> int:
 
 
 def column_pruner(state: AgentState) -> AgentState:
-    question = state["question"]
+    question = state.get("contextualized_question", state["question"])
     full_schemas = state.get("full_schemas", {})
 
     if not full_schemas:

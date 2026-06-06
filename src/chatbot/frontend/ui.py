@@ -1,3 +1,5 @@
+import uuid
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -166,6 +168,15 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Lỗi: {e}")
 
+    if st.button("🗑️ Xóa lịch sử hội thoại", use_container_width=True):
+        session_id = st.session_state.get("session_id", "default")
+        try:
+            requests.post(f"{API_URL}/clear-history?session_id={session_id}", timeout=10)
+        except Exception:
+            pass
+        st.session_state.chat_history = []
+        st.rerun()
+
     show_debug = st.toggle("🔍 Hiện Debug Panel", value=False)
 
 st.markdown("""
@@ -177,6 +188,8 @@ st.markdown("""
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
 
 
@@ -213,8 +226,16 @@ def render_assistant_message(msg: dict, msg_idx: int = 0):
             pills_html += f"<span class='meta-pill'>📊 {row_count} dòng</span>"
         st.markdown(pills_html, unsafe_allow_html=True)
 
+    analysis = msg.get("analysis", "")
+    if analysis:
+        st.markdown("---")
+        st.markdown(analysis)
+
 
 def render_debug_panel(msg: dict):
+    ctx_q = msg.get("contextualized_question")
+    if ctx_q:
+        st.markdown(f"**🔄 Câu hỏi sau rewrite:** {ctx_q}")
     sql = msg.get("sql")
     log = msg.get("execution_log", [])
     if sql:
@@ -249,7 +270,10 @@ if user_input:
             try:
                 resp = requests.post(
                     f"{API_URL}/chat",
-                    json={"query": user_input},
+                    json={
+                        "query": user_input,
+                        "session_id": st.session_state.session_id,
+                    },
                     timeout=300,
                 )
                 resp.raise_for_status()

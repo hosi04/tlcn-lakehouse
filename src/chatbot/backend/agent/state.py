@@ -4,22 +4,30 @@ from typing_extensions import TypedDict
 
 
 class AgentState(TypedDict, total=False):
-    question: str                       
-    intent: str                         
-    direct_answer: Optional[str]        
+    question: str
+    chat_history: list
+    contextualized_question: str
+    sub_queries: list[str]
 
-    retrieved_tables: list[str]         
-    full_schemas: dict[str, Any]        
+    intent: str
+    direct_answer: Optional[str]
 
-    pruned_schema: str                  
-    columns_pruned_count: int           
+    retrieved_tables: list[str]
+    retrieved_candidates: list[dict]
+    full_schemas: dict[str, Any]
 
-    sql: str                            
-    sql_error: Optional[str]           
-    retry_count: int                    
+    pruned_schema: str
+    columns_pruned_count: int
 
-    query_result: list[dict[str, Any]]  
-    columns: list[str]                  
-    row_count: int                      
-    schemas_used: list[str]             
-    execution_log: list[str]            
+    sql: str
+    sql_error: Optional[str]
+    retry_count: int
+
+    query_result: list[dict[str, Any]]
+    columns: list[str]
+    row_count: int
+    schemas_used: list[str]
+    execution_log: list[str]
+
+    analysis: str
+    active_agent: str

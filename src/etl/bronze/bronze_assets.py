@@ -6,7 +6,7 @@ import yaml
 from dotenv import load_dotenv
 from minio import Minio
 
-from src.spark.utils import get_spark_session
+from src.etl.utils import get_spark_session
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,7 +77,7 @@ def _ingest_source(spark, source: dict, data_root: Path) -> dict:
 
     df.write.format("iceberg").mode("overwrite").saveAsTable(full_target)
 
-    logger.info("✔ Done: %s", full_target)
+    logger.info("Done: %s", full_target)
     return {
         "name": name,
         "target": full_target,

@@ -1,3 +1,37 @@
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+
+CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages([
+    ("system",
+     "Bạn là trợ lý phân tích dữ liệu. Nhiệm vụ: dựa trên lịch sử hội thoại "
+     "và câu hỏi mới, viết lại câu hỏi thành một câu ĐỘC LẬP, HOÀN CHỈNH "
+     "bằng tiếng Việt.\n\n"
+     "QUY TẮC:\n"
+     "- Nếu câu hỏi mới tham chiếu đến ngữ cảnh trước (\"cái đó\", \"thêm\", "
+     "\"theo tháng nữa\", \"của năm 2017\"), hãy thay thế bằng nội dung cụ thể.\n"
+     "- Nếu câu hỏi đã rõ ràng, giữ nguyên.\n"
+     "- Chỉ trả về DUY NHẤT 1 câu hỏi đã viết lại, không giải thích."),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+])
+
+
+MULTI_QUERY_PROMPT = """\
+Bạn là trợ lý tìm kiếm schema database cho hệ thống e-commerce Lakehouse.
+
+Nhiệm vụ: Sinh ra 3 câu hỏi phụ KHÁC NHAU để tìm kiếm bảng dữ liệu liên quan.
+Mỗi câu hỏi phụ nên nhìn vấn đề từ một góc khác:
+1. Câu hỏi về DỮ LIỆU cần truy vấn (metric, dimension)
+2. Câu hỏi về BẢNG/CỘT liên quan
+3. Câu hỏi về MỐI QUAN HỆ giữa các bảng
+
+Câu hỏi gốc: {question}
+
+Trả về ĐÚNG 3 dòng, mỗi dòng 1 câu hỏi phụ (không đánh số, không giải thích):
+"""
+
+
+
 INTENT_PROMPT = """\
 Bạn là bộ phân loại ý định cho chatbot phân tích dữ liệu Lakehouse.
 
@@ -103,3 +137,31 @@ SQL:
 """
 
 
+ANALYST_PROMPT = """\
+Bạn là chuyên gia phân tích dữ liệu e-commerce cho hệ thống Lakehouse.
+
+CÂU HỎI CỦA NGƯỜI DÙNG: {question}
+
+SQL ĐÃ CHẠY:
+```sql
+{sql}
+```
+
+KẾT QUẢ ({row_count} dòng, cột: {columns}):
+{result_summary}
+
+NHIỆM VỤ — Phân tích kết quả và trả lời theo 3 phần:
+
+📊 **Tóm tắt:** Mô tả ngắn gọn kết quả chính (2-3 câu)
+
+🔍 **Insight:** Phát hiện xu hướng, bất thường hoặc pattern đáng chú ý từ dữ liệu (2-3 bullet points)
+
+💡 **Gợi ý hành động:** Đề xuất 1-2 hành động cụ thể mà doanh nghiệp nên thực hiện dựa trên dữ liệu này
+
+QUY TẮC:
+- Trả lời bằng tiếng Việt
+- Ngắn gọn, rõ ràng, dùng con số cụ thể từ kết quả
+- Nếu dữ liệu có số tiền, đơn vị là BRL (Real Brazil)
+- Nếu kết quả ít dữ liệu (<3 dòng), vẫn phân tích đầy đủ
+- Dùng emoji để trực quan hóa
+"""

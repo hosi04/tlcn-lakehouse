@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from pyspark.sql import SparkSession
-from src.spark.utils import get_spark_session
+from src.etl.utils import get_spark_session
 
 logger = logging.getLogger(__name__)
 
@@ -10,112 +10,138 @@ def load_revenue_data(spark: SparkSession = None) -> pd.DataFrame:
     _owns_spark = spark is None
     if _owns_spark:
         spark = get_spark_session("MLOps-Revenue")
-    logger.info("[data_loader] Loading weekly revenue data...")
+    logger.info("[data_loader] Loading feature-rich weekly revenue data...")
     try:
         df = spark.sql("""
+        WITH weekly_base AS (
             SELECT
                 d.year,
                 d.week_of_year,
-                MIN(d.month)                     AS month,
-                SUM(fo.total_payment_value)      AS weekly_revenue,
-                COUNT(DISTINCT fo.order_key)     AS order_count,
+                MIN(d.month)                                        AS month,
+                SUM(fo.total_payment_value)                         AS weekly_revenue,
+                COUNT(DISTINCT fo.order_key)                        AS order_count,
+                SUM(fo.total_product_value)                         AS total_product_value,
+                SUM(fo.total_freight_value)                         AS total_freight_value,
+                SUM(fo.total_payment_value)
+                    / NULLIF(COUNT(DISTINCT fo.order_key), 0)       AS avg_order_value,
+                SUM(fo.number_of_items)
+                    / NULLIF(COUNT(DISTINCT fo.order_key), 0)       AS avg_items_per_order,
+                SUM(fo.total_freight_value)
+                    / NULLIF(SUM(fo.total_payment_value), 0)        AS freight_revenue_ratio,
+                SUM(fo.total_freight_value)
+                    / NULLIF(SUM(fo.number_of_items), 0)            AS avg_freight_per_item,
+                COUNT(DISTINCT fo.customer_key)                     AS active_customers_count,
+                AVG(fo.delivery_actual_days)                        AS avg_delivery_days,
+                AVG(fo.delivery_estimate_days)                      AS avg_estimate_days,
+                SUM(CASE WHEN fo.delivery_early_days < 0 THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(DISTINCT fo.order_key), 0)       AS late_delivery_rate,
+                SUM(CASE WHEN fo.primary_payment_type = 'credit_card' THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(DISTINCT fo.order_key), 0)       AS credit_card_ratio,
+                AVG(fo.total_installments)                          AS avg_installments,
                 SUM(CASE WHEN d.is_weekend THEN 1 ELSE 0 END)
-                    / COUNT(DISTINCT fo.order_key) AS weekend_order_ratio
+                    / NULLIF(COUNT(DISTINCT fo.order_key), 0)       AS weekend_order_ratio
+
             FROM iceberg.gold.fact_order fo
             JOIN iceberg.gold.dim_date d
                 ON fo.purchase_date_key = d.date_key
             WHERE fo.order_status = 'delivered'
             GROUP BY d.year, d.week_of_year
-            ORDER BY d.year, d.week_of_year
-        """)
-        pdf = df.toPandas()
-        logger.info(f"[data_loader] Revenue data: {len(pdf)} weeks")
-        return pdf
-    finally:
-        if _owns_spark:
-            spark.stop()
+        ),
 
-
-def load_anomaly_data(spark: SparkSession = None) -> pd.DataFrame:
-    _owns_spark = spark is None
-    if _owns_spark:
-        spark = get_spark_session("MLOps-Anomaly")
-    logger.info("[data_loader] Loading anomaly detection data...")
-    try:
-        df = spark.sql("""
+        weekly_sellers AS (
             SELECT
-                purchase_date_key,
-                order_id,
-                delivery_actual_days,
-                delivery_estimate_days,
-                total_freight_value,
-                total_product_value,
-                number_of_items
-            FROM iceberg.gold.fact_order
-            WHERE order_status         = 'delivered'
-              AND delivery_actual_days IS NOT NULL
-              AND delivery_estimate_days IS NOT NULL
-              AND total_freight_value  > 0
-              AND number_of_items      > 0
-            ORDER BY purchase_date_key, order_id
-        """)
-        pdf = df.toPandas()
-        logger.info(f"[data_loader] Anomaly data: {len(pdf)} orders")
-        return pdf
-    finally:
-        if _owns_spark:
-            spark.stop()
+                d.year,
+                d.week_of_year,
+                COUNT(DISTINCT foi.seller_key)                      AS active_sellers_count
+            FROM iceberg.gold.fact_order_item foi
+            JOIN iceberg.gold.dim_date d
+                ON foi.purchase_date_key = d.date_key
+            WHERE foi.order_status = 'delivered'
+            GROUP BY d.year, d.week_of_year
+        ),
 
-
-def load_late_delivery_data(min_weeks: int = 10, spark: SparkSession = None) -> pd.DataFrame:
-    _owns_spark = spark is None
-    if _owns_spark:
-        spark = get_spark_session("MLOps-LateDelivery")
-    logger.info("[data_loader] Loading late delivery data...")
-    try:
-        df = spark.sql("""
-            WITH seller_orders AS (
-                SELECT DISTINCT
-                    foi.seller_key,
-                    fo.order_key,
-                    d.year,
-                    d.week_of_year,
-                    fo.delivery_actual_days,
-                    fo.delivery_estimate_days,
-                    fo.delivery_early_days,
-                    CASE WHEN fo.delivery_early_days < 0 THEN 1 ELSE 0 END AS is_late_order
-                FROM iceberg.gold.fact_order_item foi
-                JOIN iceberg.gold.fact_order fo
-                    ON foi.order_key = fo.order_key
-                JOIN iceberg.gold.dim_date d
-                    ON fo.purchase_date_key = d.date_key
-                WHERE fo.order_status         = 'delivered'
-                  AND fo.delivery_early_days IS NOT NULL
-            )
+        weekly_enriched AS (
             SELECT
-                seller_key,
-                year,
-                week_of_year,
-                AVG(delivery_actual_days)                                 AS avg_delivery_days,
-                AVG(delivery_estimate_days)                               AS avg_estimate_days,
-                COUNT(DISTINCT order_key)                                 AS order_count,
-                SUM(is_late_order) / COUNT(DISTINCT order_key)            AS late_rate,
-                CAST(
-                    MAX(is_late_order)
-                AS INT)                                                   AS is_late_week
-            FROM seller_orders
-            GROUP BY seller_key, year, week_of_year
-            ORDER BY seller_key, year, week_of_year
+                b.*,
+                COALESCE(s.active_sellers_count, 0)                 AS active_sellers_count
+            FROM weekly_base b
+            LEFT JOIN weekly_sellers s
+                ON b.year = s.year AND b.week_of_year = s.week_of_year
+        ),
+
+        weekly_lagged AS (
+            SELECT
+                *,
+
+                LAG(weekly_revenue, 1) OVER (ORDER BY year, week_of_year) AS revenue_lag_1,
+                LAG(weekly_revenue, 2) OVER (ORDER BY year, week_of_year) AS revenue_lag_2,
+                LAG(weekly_revenue, 4) OVER (ORDER BY year, week_of_year) AS revenue_lag_4,
+
+                LAG(order_count, 1) OVER (ORDER BY year, week_of_year)    AS order_count_lag_1,
+                LAG(order_count, 2) OVER (ORDER BY year, week_of_year)    AS order_count_lag_2,
+                LAG(order_count, 4) OVER (ORDER BY year, week_of_year)    AS order_count_lag_4,
+                AVG(weekly_revenue) OVER (
+                    ORDER BY year, week_of_year
+                    ROWS BETWEEN 4 PRECEDING AND 1 PRECEDING
+                ) AS rolling_avg_4w,
+
+                STDDEV(weekly_revenue) OVER (
+                    ORDER BY year, week_of_year
+                    ROWS BETWEEN 4 PRECEDING AND 1 PRECEDING
+                ) AS rolling_std_4w,
+
+                AVG(weekly_revenue) OVER (
+                    ORDER BY year, week_of_year
+                    ROWS BETWEEN 8 PRECEDING AND 1 PRECEDING
+                ) AS rolling_avg_8w,
+
+                AVG(order_count) OVER (
+                    ORDER BY year, week_of_year
+                    ROWS BETWEEN 4 PRECEDING AND 1 PRECEDING
+                ) AS order_rolling_avg_4w
+
+            FROM weekly_enriched
+        )
+
+        SELECT
+            *,
+            CASE
+                WHEN revenue_lag_2 IS NOT NULL AND revenue_lag_2 > 0
+                THEN (revenue_lag_1 - revenue_lag_2) / revenue_lag_2
+                ELSE 0.0
+            END AS revenue_momentum,
+
+            CASE
+                WHEN revenue_lag_2 IS NOT NULL AND revenue_lag_2 > 0
+                     AND LAG(revenue_lag_1, 1) OVER (ORDER BY year, week_of_year) IS NOT NULL
+                THEN (revenue_lag_1 - revenue_lag_2) / revenue_lag_2
+                     - (revenue_lag_2 - revenue_lag_4) / NULLIF(revenue_lag_4, 0)
+                ELSE 0.0
+            END AS revenue_acceleration
+
+        FROM weekly_lagged
+        ORDER BY year, week_of_year
         """)
+
         pdf = df.toPandas()
 
-        week_counts = pdf.groupby("seller_key")["week_of_year"].count()
-        valid_sellers = week_counts[week_counts >= min_weeks].index
-        pdf = pdf[pdf["seller_key"].isin(valid_sellers)].reset_index(drop=True)
+        lag_rolling_cols = [
+            "revenue_lag_1", "revenue_lag_2", "revenue_lag_4",
+            "order_count_lag_1", "order_count_lag_2", "order_count_lag_4",
+            "rolling_avg_4w", "rolling_std_4w", "rolling_avg_8w",
+            "order_rolling_avg_4w",
+            "revenue_momentum", "revenue_acceleration",
+        ]
+        for col in lag_rolling_cols:
+            if col in pdf.columns:
+                pdf[col] = pdf[col].fillna(0)
 
         logger.info(
-            f"[data_loader] Late delivery data: {len(pdf)} seller-weeks "
-            f"({pdf['seller_key'].nunique()} sellers, min_weeks≥{min_weeks})"
+            "[data_loader] Revenue data: %d weeks x %d features | "
+            "date range: %d-W%d -> %d-W%d",
+            len(pdf), len(pdf.columns),
+            pdf["year"].min(), pdf["week_of_year"].min(),
+            pdf["year"].max(), pdf["week_of_year"].max(),
         )
         return pdf
     finally:

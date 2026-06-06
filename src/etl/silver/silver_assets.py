@@ -2,8 +2,8 @@ import logging
 
 from dotenv import load_dotenv
 
-from src.spark.silver.rule_engine import load_yaml_config, apply_rules, summarise_rules
-from src.spark.utils import get_spark_session
+from src.etl.silver.rule_engine import load_yaml_config, apply_rules, summarise_rules
+from src.etl.utils import get_spark_session
 
 logging.basicConfig(
     level=logging.INFO,

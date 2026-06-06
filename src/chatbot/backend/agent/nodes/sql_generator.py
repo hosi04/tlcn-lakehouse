@@ -1,3 +1,5 @@
+import re
+
 from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.agent.prompts import SQL_GEN_PROMPT, SQL_FIX_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
@@ -15,12 +17,15 @@ def _clean_sql(raw: str) -> str:
         lines = sql.splitlines()
         inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
         sql = "\n".join(inner).strip()
+    match = re.search(r"\b(select|with)\b", sql, flags=re.IGNORECASE)
+    if match:
+        sql = sql[match.start():]
     sql = sql.rstrip(";").strip()
     return sql
 
 
 def sql_generator(state: AgentState) -> AgentState:
-    question = state["question"]
+    question = state.get("contextualized_question", state["question"])
     pruned_schema = state.get("pruned_schema", "")
     retry_count = state.get("retry_count", 0)
     log = state.get("execution_log", [])

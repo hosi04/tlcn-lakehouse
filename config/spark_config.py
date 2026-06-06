@@ -48,7 +48,7 @@ class SparkConnect():
             builder.config("spark.executor.cores", executor_cores)
         if driver_memory:
             builder.config("spark.driver.memory", driver_memory)
-        if num_executors:
+        if num_executors and not master_url.startswith("local"):
             builder.config("spark.executor.instances", num_executors)
 
         if jar_packages:

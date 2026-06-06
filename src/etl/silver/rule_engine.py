@@ -13,18 +13,6 @@ _DEFAULT_CONFIG_PATH = _PROJECT_ROOT / "config" / "silver_rules.yaml"
 
 
 def load_yaml_config(path: str | None = None) -> Dict[str, Any]:
-    """
-    Load silver_rules.yaml.
-
-    Args:
-        path: Optional path override. Defaults to config/silver_rules.yaml.
-
-    Returns:
-        Parsed YAML dict.
-
-    Raises:
-        FileNotFoundError: If the config file does not exist.
-    """
     config_path = Path(path) if path else _DEFAULT_CONFIG_PATH
     if not config_path.exists():
         raise FileNotFoundError(

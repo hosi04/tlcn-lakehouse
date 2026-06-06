@@ -6,7 +6,7 @@ _llm = get_llm()
 
 
 def intent_classifier(state: AgentState) -> AgentState:
-    question = state["question"]
+    question = state.get("contextualized_question", state["question"])
     prompt = INTENT_PROMPT.format(question=question)
     response = _llm.invoke(prompt).content.strip()
 

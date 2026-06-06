@@ -11,6 +11,8 @@ def get_spark_session(app_name: str = "Lakehouse App") -> SparkSession:
     """
     Creates and returns a SparkSession with standard Lakehouse configurations.
     """
+    os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
+
     jar_packages = [
         "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1",
         "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3",
@@ -48,11 +50,20 @@ def get_spark_session(app_name: str = "Lakehouse App") -> SparkSession:
         "spark.executor.memoryOverhead": "2g",
         "spark.sql.iceberg.direct-write.enabled": "false",
         "spark.sql.iceberg.vectorization.enabled": "false",
+
+        # Stable local networking, especially for Spark on Windows.
+        "spark.driver.host": "127.0.0.1",
+        "spark.driver.bindAddress": "127.0.0.1",
+        "spark.blockManager.port": "0",
+        "spark.driver.port": "0",
+        "spark.port.maxRetries": "64",
+        "spark.network.timeout": "600s",
+        "spark.executor.heartbeatInterval": "60s",
     }
 
     spark = SparkConnect(
         app_name=app_name,
-        master_url="local[*]",
+        master_url="local[2]",
         executor_cores=2,
         executor_memory="4g",
         driver_memory="4g", # Adjusted for general use
