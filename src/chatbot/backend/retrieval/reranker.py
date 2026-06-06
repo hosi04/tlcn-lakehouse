@@ -1,20 +1,19 @@
 import logging
+from functools import lru_cache
 
 from sentence_transformers import CrossEncoder
 
 logger = logging.getLogger(__name__)
 
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-_reranker = None
 
 
+@lru_cache(maxsize=1)
 def _get_reranker() -> CrossEncoder:
-    global _reranker
-    if _reranker is None:
-        logger.info("[Reranker] Loading %s...", RERANKER_MODEL)
-        _reranker = CrossEncoder(RERANKER_MODEL)
-        logger.info("[Reranker] Model loaded.")
-    return _reranker
+    logger.info("[Reranker] Loading %s...", RERANKER_MODEL)
+    model = CrossEncoder(RERANKER_MODEL)
+    logger.info("[Reranker] Model loaded.")
+    return model
 
 
 def warmup_reranker() -> dict:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
 from functools import lru_cache
@@ -10,6 +11,7 @@ import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 _METADATA_PATH = Path(__file__).parent / "mcp_server" / "schema_metadata.yaml"
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -25,7 +27,7 @@ def _get_trino_conn():
 
     return connect(
         host=os.getenv("TRINO_HOST", "localhost"),
-        port=int(os.getenv("TRINO_PORT")),
+        port=int(os.getenv("TRINO_PORT", "8085")),
         user=os.getenv("TRINO_USER", "admin"),
         catalog=os.getenv("TRINO_CATALOG", "iceberg"),
         schema=os.getenv("TRINO_SCHEMA", "gold"),
@@ -212,6 +214,7 @@ def execute_sql(sql: str, max_rows: int = 1000) -> dict[str, Any]:
             "sql": guarded,
         }
     except Exception as exc:
+        logger.exception("SQL execution failed: %s", guarded[:200])
         return {
             "success": False,
             "error": str(exc),

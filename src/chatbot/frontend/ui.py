@@ -3,7 +3,6 @@ import uuid
 import streamlit as st
 import requests
 import pandas as pd
-import json
 
 st.set_page_config(
     page_title="Lakehouse AI Analyst",
@@ -211,7 +210,7 @@ def render_assistant_message(msg: dict, msg_idx: int = 0):
         df = pd.DataFrame(rows, columns=columns)
         df = df.dropna(how="all")
         with st.expander("📋 Xem bảng dữ liệu", expanded=False):
-            st.dataframe(df, use_container_width=True, height=250)
+            st.dataframe(df, width="stretch", height=250)
 
     schemas    = msg.get("schemas_used", [])
     pruned     = msg.get("columns_pruned", 0)
@@ -290,11 +289,22 @@ if user_input:
                 err = "❌ Không kết nối được backend. Kiểm tra uvicorn đang chạy trên port 8000."
                 st.error(err)
                 st.session_state.chat_history.append({
-                    "role": "assistant", "report": err, "intent": "out_of_scope",
+                    "role": "assistant", "direct_answer": err, "intent": "out_of_scope",
+                })
+            except requests.exceptions.HTTPError as e:
+                detail = ""
+                try:
+                    detail = e.response.json().get("detail", "")
+                except Exception:
+                    pass
+                err = f"❌ Server error ({e.response.status_code}): {detail or str(e)}"
+                st.error(err)
+                st.session_state.chat_history.append({
+                    "role": "assistant", "direct_answer": err, "intent": "out_of_scope",
                 })
             except Exception as e:
                 err = f"❌ Lỗi: {str(e)}"
                 st.error(err)
                 st.session_state.chat_history.append({
-                    "role": "assistant", "report": err, "intent": "out_of_scope",
+                    "role": "assistant", "direct_answer": err, "intent": "out_of_scope",
                 })

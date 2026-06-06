@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+import logging
+from functools import lru_cache
+
 from langgraph.graph import StateGraph, END
 
 from src.chatbot.backend.agent.state import AgentState
@@ -5,6 +10,8 @@ from src.chatbot.backend.agent.agents.supervisor import build_supervisor
 from src.chatbot.backend.agent.agents.retrieval_agent import build_retrieval_agent
 from src.chatbot.backend.agent.agents.sql_agent import build_sql_agent
 from src.chatbot.backend.agent.agents.analyst_agent import analyst_agent
+
+logger = logging.getLogger(__name__)
 
 
 def _route_after_supervisor(state: AgentState) -> str:
@@ -39,14 +46,10 @@ def build_graph() -> StateGraph:
     return workflow
 
 
-_compiled_graph = None
-
-
+@lru_cache(maxsize=1)
 def get_graph():
-    global _compiled_graph
-    if _compiled_graph is None:
-        _compiled_graph = build_graph().compile()
-    return _compiled_graph
+    logger.info("Compiling LangGraph agent graph...")
+    return build_graph().compile()
 
 
 def run_agent(question: str, chat_history: list = None) -> AgentState:

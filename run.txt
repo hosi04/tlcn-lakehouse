@@ -14,7 +14,7 @@ uvicorn src.chatbot.backend.app:app --host 0.0.0.0 --port 8000
 streamlit run src/chatbot/frontend/ui.py
 
 
-trino://trino@trino:8080/iceberg
+trino://trino@trino:8085/iceberg
 
 python -m src.mlops.revenue.trainer_lightgbm
 python -m src.mlops.revenue.trainer_lstm

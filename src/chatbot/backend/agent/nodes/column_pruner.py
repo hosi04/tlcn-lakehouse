@@ -3,8 +3,6 @@ from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.agent.prompts import COLUMN_PRUNE_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
 
-_llm = get_llm()
-
 
 def _format_full_schema(full_schemas: dict) -> str:
     lines = []
@@ -57,7 +55,7 @@ def column_pruner(state: AgentState) -> AgentState:
         question=question,
         full_schema=full_schema_text,
     )
-    pruned = _llm.invoke(prompt).content.strip()
+    pruned = get_llm().invoke(prompt).content.strip()
 
     cols_after = _count_columns(pruned)
     pruned_count = max(0, total_cols_before - cols_after)

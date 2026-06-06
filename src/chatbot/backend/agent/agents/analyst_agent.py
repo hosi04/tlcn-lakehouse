@@ -2,15 +2,6 @@ from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.agent.prompts import ANALYST_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
 
-_llm = None
-
-
-def _get_llm():
-    global _llm
-    if _llm is None:
-        _llm = get_llm()
-    return _llm
-
 
 def _summarize_result(rows: list[dict], columns: list[str], max_rows: int = 20) -> str:
     if not rows:
@@ -64,7 +55,7 @@ def analyst_agent(state: AgentState) -> AgentState:
         result_summary=result_summary,
     )
 
-    response = _get_llm().invoke(prompt).content.strip()
+    response = get_llm().invoke(prompt).content.strip()
 
     return {
         "analysis": response,

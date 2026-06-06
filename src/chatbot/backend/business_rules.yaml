@@ -1,0 +1,33 @@
+schema_rules:
+  - table: fact_order_item
+    notes:
+      - "KHÔNG có cột 'quantity', 'qty', hay 'amount'."
+      - "Dùng COUNT(foi.order_item_key) hoặc COUNT(*) để đếm số lượng item bán."
+      - "Có các cột đo lường: item_price, item_freight_value, item_total_value."
+
+  - table: fact_order
+    notes:
+      - "Có: total_payment_value, total_product_value, total_freight_value, number_of_items."
+      - "Để lọc đơn hàng thành công: WHERE order_status = 'delivered'"
+
+sql_conventions:
+  catalog: iceberg
+  default_schema: gold
+  table_prefix: "iceberg.gold."
+  common_aliases:
+    fact_order: fo
+    fact_order_item: foi
+    dim_customer: dc
+    dim_date: d
+    dim_product: dp
+    dim_seller: ds
+  join_strategy: "Join fact → dimension bằng surrogate keys (_key), KHÔNG dùng business keys (_id)"
+  date_join: "Khi filter/group theo thời gian, JOIN với dim_date bằng date_key tương ứng"
+
+forbidden_sql_patterns:
+  - "SELECT *"
+  - "DELETE"
+  - "DROP"
+  - "UPDATE"
+  - "INSERT"
+  - "TRUNCATE"

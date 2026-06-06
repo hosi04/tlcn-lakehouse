@@ -1,4 +1,47 @@
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+
+import yaml
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+_RULES_PATH = Path(__file__).resolve().parent.parent / "business_rules.yaml"
+
+
+@lru_cache(maxsize=1)
+def load_business_rules() -> dict:
+    with open(_RULES_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def _build_schema_rules_text() -> str:
+    rules = load_business_rules()
+    lines = []
+    for entry in rules.get("schema_rules", []):
+        table = entry.get("table", "")
+        for note in entry.get("notes", []):
+            lines.append(f"- {table}: {note}")
+    return "\n".join(lines)
+
+
+def _build_sql_conventions_text() -> str:
+    rules = load_business_rules()
+    conv = rules.get("sql_conventions", {})
+    lines = [
+        f"- Luôn dùng tên bảng đầy đủ: {conv.get('table_prefix', 'iceberg.gold.')}<table_name>",
+    ]
+    aliases = conv.get("common_aliases", {})
+    if aliases:
+        alias_strs = [f"{k}: {v}" for k, v in aliases.items()]
+        lines.append(f"- Alias phổ biến khi JOIN: {', '.join(alias_strs)}")
+    join_strategy = conv.get("join_strategy", "")
+    if join_strategy:
+        lines.append(f"- {join_strategy}")
+    date_join = conv.get("date_join", "")
+    if date_join:
+        lines.append(f"- {date_join}")
+    return "\n".join(lines)
 
 
 CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages([
@@ -84,20 +127,16 @@ Bạn là chuyên gia SQL cho hệ thống Lakehouse chạy **Trino** (Apache Tr
 
 QUY TẮC BẮT BUỘC:
 1. Chỉ sinh câu lệnh SELECT hợp lệ cho Trino — KHÔNG sinh DELETE, DROP, UPDATE, INSERT.
-2. Luôn dùng tên bảng đầy đủ: iceberg.gold.<table_name>
-3. Luôn dùng alias khi JOIN nhiều bảng (ví dụ: fo, dc, d, dp, ds, foi)
-4. Không dùng SELECT * — chỉ select cột cần thiết
-5. Đặt alias rõ ràng cho aggregation (SUM(...) AS total_revenue)
-6. Join fact → dimension bằng surrogate keys (_key), KHÔNG dùng business keys (_id)
-7. Khi filter/group theo thời gian, JOIN với dim_date bằng date_key tương ứng
-8. Trả về SQL THUẦN — không có giải thích, không có markdown code block
+2. Luôn dùng alias khi JOIN nhiều bảng
+3. Không dùng SELECT * — chỉ select cột cần thiết
+4. Đặt alias rõ ràng cho aggregation (SUM(...) AS total_revenue)
+5. Trả về SQL THUẦN — không có giải thích, không có markdown code block
+
+QUY TẮC SQL:
+""" + _build_sql_conventions_text() + """
 
 QUY TẮC ĐẶC THÙ SCHEMA NÀY (BẮT BUỘC):
-- fact_order_item KHÔNG có cột 'quantity', 'qty', hay 'amount'.
-  → Dùng COUNT(foi.order_item_key) hoặc COUNT(*) để đếm số lượng item bán.
-- fact_order_item có các cột đo lường: item_price, item_freight_value, item_total_value.
-- fact_order có: total_payment_value, total_product_value, total_freight_value, number_of_items.
-- Để lọc đơn hàng thành công: WHERE order_status = 'delivered'
+""" + _build_schema_rules_text() + """
 
 SCHEMA CHỈ CÓ CÁC CỘT LIÊN QUAN (đã được prune):
 {pruned_schema}

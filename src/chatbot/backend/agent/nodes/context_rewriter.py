@@ -1,17 +1,15 @@
+from functools import lru_cache
+
 from langchain_core.output_parsers import StrOutputParser
 
 from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.agent.prompts import CONTEXTUALIZE_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
 
-_chain = None
 
-
+@lru_cache(maxsize=1)
 def _get_chain():
-    global _chain
-    if _chain is None:
-        _chain = CONTEXTUALIZE_PROMPT | get_llm() | StrOutputParser()
-    return _chain
+    return CONTEXTUALIZE_PROMPT | get_llm() | StrOutputParser()
 
 
 def context_rewriter(state: AgentState) -> AgentState:

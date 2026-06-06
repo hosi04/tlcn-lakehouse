@@ -1,11 +1,14 @@
-import yaml
+import logging
+from functools import lru_cache
 from pathlib import Path
 
+import yaml
 import chromadb
 from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 _MCP_DIR = Path(__file__).parent.parent / "mcp_server"
 _METADATA_PATH = _MCP_DIR / "schema_metadata.yaml"
@@ -14,24 +17,19 @@ _STORE_PATH = Path(__file__).parent.parent / "schema_store"
 
 SCHEMA_COLLECTION = "lakehouse_schemas"
 SQL_SAMPLE_COLLECTION = "sql_samples"
-_embedding_function_instance = None
-_client_instance = None
 
+
+@lru_cache(maxsize=1)
 def _get_embedding_function():
-    global _embedding_function_instance
-    if _embedding_function_instance is None:
-        _embedding_function_instance = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
-    return _embedding_function_instance
+    return embedding_functions.SentenceTransformerEmbeddingFunction(
+        model_name="all-MiniLM-L6-v2"
+    )
 
 
+@lru_cache(maxsize=1)
 def _get_client() -> chromadb.PersistentClient:
-    global _client_instance
-    if _client_instance is None:
-        _STORE_PATH.mkdir(parents=True, exist_ok=True)
-        _client_instance = chromadb.PersistentClient(path=str(_STORE_PATH))
-    return _client_instance
+    _STORE_PATH.mkdir(parents=True, exist_ok=True)
+    return chromadb.PersistentClient(path=str(_STORE_PATH))
 
 
 def _build_schema_document(table_name: str, table_meta: dict) -> tuple[str, dict]:
@@ -68,10 +66,10 @@ def build_schema_index(
 
     if SCHEMA_COLLECTION in existing:
         if force_rebuild:
-            print(f"[Indexer] Xóa collection cũ: {SCHEMA_COLLECTION}")
+            logger.info("Xóa collection cũ: %s", SCHEMA_COLLECTION)
             client.delete_collection(SCHEMA_COLLECTION)
         else:
-            print(f"[Indexer] '{SCHEMA_COLLECTION}' đã tồn tại. Dùng lại.")
+            logger.info("'%s' đã tồn tại. Dùng lại.", SCHEMA_COLLECTION)
             return client.get_collection(SCHEMA_COLLECTION, embedding_function=ef)
 
     collection = client.create_collection(
@@ -84,7 +82,7 @@ def build_schema_index(
         yaml_data = yaml.safe_load(f)
 
     tables = yaml_data.get("tables", {})
-    print(f"[Indexer] Index {len(tables)} bảng vào '{SCHEMA_COLLECTION}'...")
+    logger.info("Index %d bảng vào '%s'...", len(tables), SCHEMA_COLLECTION)
 
     ids, docs, metas = [], [], []
     for table_name, table_meta in tables.items():
@@ -92,10 +90,10 @@ def build_schema_index(
         ids.append(table_name)
         docs.append(doc_text)
         metas.append(meta)
-        print(f"  ✓ {table_name}")
+        logger.debug("  ✓ %s", table_name)
 
     collection.add(ids=ids, documents=docs, metadatas=metas)
-    print(f"[Indexer] ✅ Schema index: {len(ids)} bảng")
+    logger.info("Schema index: %d bảng", len(ids))
     return collection
 
 
@@ -108,10 +106,10 @@ def build_sql_sample_index(
 
     if SQL_SAMPLE_COLLECTION in existing:
         if force_rebuild:
-            print(f"[Indexer] Xóa collection cũ: {SQL_SAMPLE_COLLECTION}")
+            logger.info("Xóa collection cũ: %s", SQL_SAMPLE_COLLECTION)
             client.delete_collection(SQL_SAMPLE_COLLECTION)
         else:
-            print(f"[Indexer] '{SQL_SAMPLE_COLLECTION}' đã tồn tại. Dùng lại.")
+            logger.info("'%s' đã tồn tại. Dùng lại.", SQL_SAMPLE_COLLECTION)
             return client.get_collection(SQL_SAMPLE_COLLECTION, embedding_function=ef)
 
     collection = client.create_collection(
@@ -124,7 +122,7 @@ def build_sql_sample_index(
         yaml_data = yaml.safe_load(f)
 
     samples = yaml_data.get("samples", [])
-    print(f"[Indexer] Index {len(samples)} SQL samples vào '{SQL_SAMPLE_COLLECTION}'...")
+    logger.info("Index %d SQL samples vào '%s'...", len(samples), SQL_SAMPLE_COLLECTION)
 
     ids, docs, metas = [], [], []
     for sample in samples:
@@ -141,10 +139,10 @@ def build_sql_sample_index(
             "sql": sql,
             "tables": tables,
         })
-        print(f"  ✓ [{sample_id}] {question[:50]}")
+        logger.debug("  ✓ [%s] %s", sample_id, question[:50])
 
     collection.add(ids=ids, documents=docs, metadatas=metas)
-    print(f"[Indexer] ✅ SQL samples index: {len(ids)} examples")
+    logger.info("SQL samples index: %d examples", len(ids))
     return collection
 
 
@@ -191,18 +189,14 @@ def build_index(force_rebuild: bool = False):
     client = _get_client()
     ef = _get_embedding_function()
 
-    print("=" * 60)
-    print("Lakehouse ChromaDB Indexer")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Lakehouse ChromaDB Indexer")
+    logger.info("=" * 60)
 
     build_schema_index(client, ef, force_rebuild=force_rebuild)
-    print()
     build_sql_sample_index(client, ef, force_rebuild=force_rebuild)
 
-    print()
-    print("=" * 60)
-    print(f"✅ Hoàn thành! Đã lưu vào: {_STORE_PATH}")
-    print("=" * 60)
+    logger.info("Hoàn thành! Đã lưu vào: %s", _STORE_PATH)
 
 
 if __name__ == "__main__":

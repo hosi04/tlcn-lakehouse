@@ -2,13 +2,11 @@ from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.agent.prompts import INTENT_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
 
-_llm = get_llm()
-
 
 def intent_classifier(state: AgentState) -> AgentState:
     question = state.get("contextualized_question", state["question"])
     prompt = INTENT_PROMPT.format(question=question)
-    response = _llm.invoke(prompt).content.strip()
+    response = get_llm().invoke(prompt).content.strip()
 
     lines = [l.strip() for l in response.splitlines() if l.strip()]
     intent = lines[0].lower() if lines else "data_query"

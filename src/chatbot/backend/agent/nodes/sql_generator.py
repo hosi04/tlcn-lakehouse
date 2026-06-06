@@ -1,4 +1,5 @@
 import re
+import logging
 
 from src.chatbot.backend.agent.state import AgentState
 from src.chatbot.backend.agent.prompts import SQL_GEN_PROMPT, SQL_FIX_PROMPT
@@ -8,7 +9,7 @@ from src.chatbot.backend.retrieval.sql_sample_retriever import (
     format_examples_for_prompt,
 )
 
-_llm = get_llm()
+logger = logging.getLogger(__name__)
 
 
 def _clean_sql(raw: str) -> str:
@@ -57,7 +58,7 @@ def sql_generator(state: AgentState) -> AgentState:
             pruned_schema=pruned_schema,
         )
 
-    raw = _llm.invoke(prompt).content
+    raw = get_llm().invoke(prompt).content
     sql = _clean_sql(raw)
 
     return {
