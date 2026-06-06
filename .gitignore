@@ -2,9 +2,13 @@
 .env
 
 # Python bytecode & cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 *.pyo
-__pycache__/
+.Python
 
 # Data files (large CSV datasets)
 data/
