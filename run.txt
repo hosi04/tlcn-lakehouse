@@ -1,7 +1,7 @@
 # Terminal 1: Spark streaming Kafka -> bronze (long-running)
 python -m src.spark.bronze.bronze_events
 
-# Terminal 2: produce events, then refresh silver/gold on a schedule (e.g. every 5-15 min)
+# Airflow UI: http://localhost:8082 (airflow/airflow) — DAG events_silver_gold mỗi 15 phút
 python -m src.streaming.generator
 python -m src.spark.bronze.bronze_assets
 python -m src.spark.silver.silver_events      # incremental MERGE (default)

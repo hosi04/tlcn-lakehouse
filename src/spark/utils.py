@@ -22,7 +22,7 @@ def get_spark_session(app_name: str = "Lakehouse App") -> SparkSession:
         "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
         "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
         "spark.sql.catalog.iceberg.type": "hive",
-        "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
+        "spark.sql.catalog.iceberg.uri": os.getenv("HIVE_METASTORE_URI", "thrift://localhost:9083"),
         "spark.sql.catalog.iceberg.warehouse": "s3a://lakehouse",
 
         # S3A (MinIO)

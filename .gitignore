@@ -1,5 +1,6 @@
 # Secrets & credentials
 .env
+infrastructure/.env
 
 # Python bytecode & cache
 __pycache__/
@@ -15,7 +16,7 @@ data/
 
 # Logs
 *.log
-infrastructure/airflow/logs/
+airflow/logs/
 
 # MLflow local artifacts
 mlruns/
