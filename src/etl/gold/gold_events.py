@@ -18,8 +18,8 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, DoubleType, IntegerType, StringType, StructField, StructType
 
-from src.spark.gold.gold_assets import read_from_iceberg, write_to_iceberg
-from src.spark.utils import get_spark_session
+from src.etl.gold.gold_assets import read_from_iceberg, write_to_iceberg
+from src.etl.utils import get_spark_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

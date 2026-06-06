@@ -19,8 +19,8 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from src.spark.bronze.bronze_assets import create_bucket_if_not_exists
-from src.spark.utils import get_spark_session
+from src.etl.bronze.bronze_assets import create_bucket_if_not_exists
+from src.etl.utils import get_spark_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

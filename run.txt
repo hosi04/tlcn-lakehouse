@@ -1,14 +1,14 @@
 # Terminal 1: Spark streaming Kafka -> bronze (long-running)
-python -m src.spark.bronze.bronze_events
+python -m src.etl.bronze.bronze_events
 
 # Airflow UI: http://localhost:8082 (airflow/airflow) — DAG events_silver_gold mỗi 15 phút
 python -m src.streaming.generator
-python -m src.spark.bronze.bronze_assets
-python -m src.spark.silver.silver_events      # incremental MERGE (default)
-python -m src.spark.gold.gold_events          # batch overwrite after silver
-# python -m src.spark.silver.silver_events   # SILVER_EVENTS_MODE=full to rebuild silver
-python -m src.spark.silver.silver_assets
-python -m src.spark.gold.gold_assets
+python -m src.etl.bronze.bronze_assets
+python -m src.etl.silver.silver_events      # incremental MERGE (default)
+python -m src.etl.gold.gold_events          # batch overwrite after silver
+# python -m src.etl.silver.silver_events   # SILVER_EVENTS_MODE=full to rebuild silver
+python -m src.etl.silver.silver_assets
+python -m src.etl.gold.gold_assets
 
 uvicorn src.chatbot.backend.app:app --host 0.0.0.0 --port 8000
 streamlit run src/chatbot/frontend/ui.py

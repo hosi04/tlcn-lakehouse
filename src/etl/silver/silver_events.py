@@ -9,8 +9,8 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, desc, get_json_object, lit, max as spark_max, row_number, to_date
 from pyspark.sql.window import Window
 
-from src.spark.silver.silver_assets import read_from_iceberg
-from src.spark.utils import get_spark_session
+from src.etl.silver.silver_assets import read_from_iceberg
+from src.etl.utils import get_spark_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
