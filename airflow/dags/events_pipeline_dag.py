@@ -22,12 +22,12 @@ with DAG(
 ) as dag:
     silver_events = BashOperator(
         task_id="silver_events",
-        bash_command=f"cd {PROJECT_DIR} && python -m src.spark.silver.silver_events",
+        bash_command=f"cd {PROJECT_DIR} && python -m src.etl.silver.silver_events",
     )
 
     gold_events = BashOperator(
         task_id="gold_events",
-        bash_command=f"cd {PROJECT_DIR} && python -m src.spark.gold.gold_events",
+        bash_command=f"cd {PROJECT_DIR} && python -m src.etl.gold.gold_events",
     )
 
     silver_events >> gold_events
