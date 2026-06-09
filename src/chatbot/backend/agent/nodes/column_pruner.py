@@ -1,7 +1,5 @@
 import re
 from src.chatbot.backend.agent.state import AgentState
-from src.chatbot.backend.agent.prompts import COLUMN_PRUNE_PROMPT
-from src.chatbot.backend.llm_connector import get_llm
 
 
 def _format_full_schema(full_schemas: dict) -> str:
@@ -50,6 +48,9 @@ def column_pruner(state: AgentState) -> AgentState:
     total_cols_before = sum(
         len(m.get("columns", [])) for m in full_schemas.values()
     )
+
+    from src.chatbot.backend.agent.prompts import COLUMN_PRUNE_PROMPT
+    from src.chatbot.backend.llm_connector import get_llm
 
     prompt = COLUMN_PRUNE_PROMPT.format(
         question=question,

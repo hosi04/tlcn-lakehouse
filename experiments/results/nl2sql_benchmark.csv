@@ -1,0 +1,320 @@
+id,difficulty,query,success,passed,has_sql,sql,row_count,schemas_used,columns_pruned,had_error,self_healed,table_score,keyword_score,forbidden_score,eval_reason,time_s,error
+easy_01,easy,Tổng giá trị thanh toán của tất cả đơn hàng là bao nhiêu?,True,True,True,"SELECT 
+    SUM(total_payment_value) AS total_revenue
+FROM 
+    iceberg.gold.fact_order",1,iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.dim_customer,47,False,False,1.0,1.0,1.0,passed,12.47,
+easy_02,easy,Có bao nhiêu khách hàng trong bảng dim_customer?,True,True,True,SELECT COUNT(customer_key) AS total_customers FROM iceberg.gold.dim_customer,1,iceberg.gold.dim_customer|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,46,False,False,1.0,1.0,1.0,passed,10.64,
+easy_03,easy,Top 10 thành phố có nhiều khách hàng nhất trong dim_customer.,True,True,True,"SELECT 
+    dc.customer_city,
+    COUNT(dc.customer_key) AS total_customers
+FROM 
+    iceberg.gold.dim_customer dc
+GROUP BY 
+    dc.customer_city
+ORDER BY 
+    total_customers DESC
+LIMIT 10",10,iceberg.gold.dim_customer|iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_seller,40,False,False,1.0,1.0,1.0,passed,12.9,
+easy_04,easy,Có bao nhiêu đơn hàng có trạng thái delivered trong fact_order?,True,True,True,"SELECT COUNT(order_key) AS total_delivered_orders
+FROM iceberg.gold.fact_order
+WHERE order_status = 'delivered'",1,iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.dim_customer,45,False,False,1.0,1.0,1.0,passed,11.28,
+easy_05,easy,Liệt kê trạng thái đơn hàng và số lượng đơn hàng theo từng trạng thái trong fact_order.,True,False,True,"SELECT 
+    order_status,
+    COUNT(order_key) AS total_orders
+FROM 
+    iceberg.gold.fact_order
+WHERE 
+    order_status = 'delivered'
+GROUP BY 
+    order_status
+ORDER BY 
+    total_orders DESC",1,iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_date|iceberg.gold.dim_customer,32,False,False,1.0,1.0,0.0,forbidden_sql_keyword,18.64,
+easy_06,easy,Có bao nhiêu người bán trong bảng dim_seller?,True,True,True,SELECT COUNT(seller_key) AS total_sellers FROM iceberg.gold.dim_seller,1,iceberg.gold.dim_seller|iceberg.gold.fact_order_item|iceberg.gold.fact_order,31,False,False,1.0,1.0,1.0,passed,10.77,
+easy_07,easy,Tổng phí vận chuyển của tất cả đơn hàng trong fact_order là bao nhiêu?,True,True,True,"SELECT SUM(total_freight_value) AS total_freight_cost
+FROM iceberg.gold.fact_order",1,iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_customer|iceberg.gold.dim_date,47,False,False,1.0,1.0,1.0,passed,10.74,
+easy_08,easy,Top 10 sản phẩm có trọng lượng lớn nhất trong dim_product.,True,True,True,"SELECT 
+    dp.product_id,
+    dp.product_name_length,
+    dp.product_description_length,
+    dp.product_photos_qty,
+    dp.product_weight_g AS total_weight,
+    COUNT(foi.order_item_key) AS total_items_sold
+FROM iceberg.gold.fact_order_item foi
+JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+GROUP BY 
+    dp.product_id, 
+    dp.product_name_length, 
+    dp.product_description_length, 
+    dp.product_photos_qty, 
+    dp.product_weight_g
+ORDER BY total_weight DESC
+LIMIT 10",10,iceberg.gold.fact_order_item|iceberg.gold.dim_product|iceberg.gold.fact_order|iceberg.gold.dim_date,44,False,False,1.0,1.0,1.0,passed,16.42,
+easy_09,easy,Có bao nhiêu danh mục sản phẩm tiếng Anh khác nhau trong dim_product?,True,True,True,"SELECT COUNT(DISTINCT product_category_name_english) AS unique_categories
+FROM iceberg.gold.dim_product",1,iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.dim_customer|iceberg.gold.fact_order,46,False,False,1.0,1.0,1.0,passed,11.14,
+easy_10,easy,Giá trị thanh toán trung bình của mỗi đơn hàng trong fact_order là bao nhiêu?,True,True,True,"SELECT 
+    ROUND(AVG(total_payment_value), 2) AS avg_order_value
+FROM 
+    iceberg.gold.fact_order fo",1,iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.dim_customer,44,False,False,1.0,1.0,1.0,passed,11.3,
+medium_01,medium,"Top 10 khách hàng có tổng giá trị thanh toán cao nhất, kèm thành phố và tiểu bang của khách hàng.",True,True,True,"SELECT 
+    dc.customer_unique_id,
+    dc.customer_city,
+    dc.customer_state,
+    SUM(fo.total_payment_value) AS total_spending
+FROM 
+    iceberg.gold.fact_order fo
+JOIN 
+    iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+WHERE 
+    fo.order_status = 'delivered'
+GROUP BY 
+    dc.customer_unique_id, dc.customer_city, dc.customer_state
+ORDER BY 
+    total_spending DESC
+LIMIT 10",10,iceberg.gold.fact_order|iceberg.gold.dim_customer|iceberg.gold.fact_order_item,29,False,False,1.0,1.0,1.0,passed,16.69,
+medium_02,medium,Tổng giá trị thanh toán theo từng tháng trong năm 2017.,True,True,True,"SELECT
+    d.year,
+    d.month,
+    SUM(fo.total_payment_value) AS total_revenue
+FROM iceberg.gold.fact_order fo
+JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+WHERE d.year = 2017 AND fo.order_status = 'delivered'
+GROUP BY d.year, d.month
+ORDER BY d.year, d.month",12,iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.fact_order_item,39,False,False,1.0,1.0,1.0,passed,12.67,
+medium_03,medium,Top 10 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất.,True,True,True,"SELECT 
+    dp.product_category_name_english AS category,
+    SUM(foi.item_total_value) AS total_revenue
+FROM iceberg.gold.fact_order_item foi
+JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+WHERE foi.order_status = 'delivered'
+GROUP BY dp.product_category_name_english
+ORDER BY total_revenue DESC
+LIMIT 10",10,iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_seller,36,False,False,1.0,1.0,1.0,passed,19.45,
+medium_04,medium,Top 10 thành phố của seller có nhiều item bán ra nhất.,True,False,True,"SELECT 
+    dc.city AS city,
+    COUNT(foi.order_item_key) AS total_items_sold
+FROM 
+    iceberg.gold.fact_order_item foi
+JOIN 
+    iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key
+GROUP BY 
+    dc.city
+ORDER BY 
+    total_items_sold DESC
+LIMIT 10",0,iceberg.gold.dim_seller|iceberg.gold.fact_order_item|iceberg.gold.dim_customer|iceberg.gold.fact_order,40,False,False,1.0,0.75,1.0,row_count_below_min,12.41,
+medium_05,medium,Số lượng đơn hàng theo từng phương thức thanh toán chính trong fact_order.,True,True,True,"SELECT 
+    primary_payment_type,
+    COUNT(order_key) AS total_orders
+FROM 
+    iceberg.gold.fact_order
+WHERE 
+    order_status = 'delivered'
+GROUP BY 
+    primary_payment_type
+ORDER BY 
+    total_orders DESC",4,iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_date|iceberg.gold.dim_customer,43,False,False,1.0,1.0,1.0,passed,12.56,
+medium_06,medium,Thời gian giao hàng thực tế trung bình của các đơn hàng trong năm 2018 là bao nhiêu ngày?,True,True,True,"SELECT 
+    AVG(delivery_actual_days) AS avg_delivery_time
+FROM 
+    iceberg.gold.fact_order fo
+JOIN 
+    iceberg.gold.dim_date d ON fo.delivered_date_key = d.date_key
+WHERE 
+    d.year = 2018
+  AND fo.order_status = 'delivered'",1,iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_customer,47,False,False,1.0,1.0,1.0,passed,12.53,
+medium_07,medium,Top 5 danh mục sản phẩm tiếng Anh bán chạy nhất theo số lượng item.,True,True,True,"SELECT 
+    dp.product_category_name_english AS category,
+    COUNT(foi.order_item_key) AS total_items_sold
+FROM 
+    iceberg.gold.fact_order_item foi
+JOIN 
+    iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+GROUP BY 
+    dp.product_category_name_english
+ORDER BY 
+    total_items_sold DESC
+LIMIT 5",5,iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.dim_seller|iceberg.gold.dim_customer,32,False,False,1.0,1.0,1.0,passed,14.0,
+medium_08,medium,Tổng giá trị thanh toán theo từng tiểu bang của khách hàng.,True,True,True,"SELECT 
+    dc.customer_state,
+    SUM(fo.total_payment_value) AS total_revenue
+FROM 
+    iceberg.gold.fact_order fo
+JOIN 
+    iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+GROUP BY 
+    dc.customer_state
+ORDER BY 
+    total_revenue DESC",27,iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.dim_customer,41,False,False,1.0,1.0,1.0,passed,17.1,
+medium_09,medium,Phí vận chuyển trung bình theo từng tiểu bang của khách hàng.,True,True,True,"SELECT 
+    dc.customer_state,
+    ROUND(AVG(foi.item_freight_value), 2) AS avg_freight
+FROM iceberg.gold.fact_order_item foi
+JOIN iceberg.gold.dim_customer dc ON foi.customer_key = dc.customer_key
+GROUP BY dc.customer_state
+ORDER BY avg_freight DESC",27,iceberg.gold.fact_order_item|iceberg.gold.dim_customer|iceberg.gold.fact_order|iceberg.gold.dim_date,33,False,False,1.0,1.0,1.0,passed,17.25,
+medium_10,medium,Số lượng đơn hàng theo từng thứ trong tuần dựa trên ngày mua hàng.,True,True,True,"SELECT 
+    d.day_of_week,
+    COUNT(fo.order_key) AS total_orders
+FROM iceberg.gold.fact_order fo
+JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+GROUP BY d.day_of_week
+ORDER BY d.day_of_week ASC",7,iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_date|iceberg.gold.dim_product,0,False,False,1.0,1.0,1.0,passed,37.88,
+hard_01,hard,Tỷ lệ đơn hàng giao trễ theo từng tiểu bang của khách hàng trong năm 2018.,True,True,True,"SELECT
+    dc.customer_state,
+    COUNT(fo.order_key) AS total_orders,
+    SUM(CASE WHEN fo.delivery_early_days < 0 THEN 1 ELSE 0 END) AS late_orders,
+    ROUND(
+        SUM(CASE WHEN fo.delivery_early_days < 0 THEN 1 ELSE 0 END) * 100.0
+        / COUNT(fo.order_key),
+        2
+    ) AS late_rate_pct
+FROM iceberg.gold.fact_order fo
+JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+WHERE d.year = 2018
+  AND fo.order_status = 'delivered'
+GROUP BY dc.customer_state
+ORDER BY late_rate_pct DESC",27,iceberg.gold.dim_date|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_customer,36,False,False,1.0,1.0,1.0,passed,22.5,
+hard_02,hard,Top 10 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất từ khách hàng ở thành phố sao paulo.,True,True,True,"SELECT 
+    dp.product_category_name_english AS category,
+    SUM(foi.item_total_value) AS total_revenue
+FROM 
+    iceberg.gold.fact_order_item foi
+JOIN 
+    iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+JOIN 
+    iceberg.gold.dim_customer dc ON foi.customer_key = dc.customer_key
+WHERE 
+    LOWER(dc.customer_city) = 'sao paulo'
+  AND foi.order_status = 'delivered'
+GROUP BY 
+    dp.product_category_name_english
+ORDER BY 
+    total_revenue DESC
+LIMIT 10",10,iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.dim_customer|iceberg.gold.fact_order,0,False,False,1.0,1.0,1.0,passed,38.73,
+hard_03,hard,"Top 5 seller có thời gian giao hàng trung bình nhanh nhất, chỉ tính seller có ít nhất 50 item đã bán.",True,True,True,"SELECT
+    ds.seller_id,
+    ds.seller_city,
+    ds.seller_state,
+    ROUND(AVG(foi.shipping_days), 2) AS avg_shipping_days,
+    COUNT(foi.order_item_key) AS total_items
+FROM iceberg.gold.fact_order_item foi
+JOIN iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key
+WHERE foi.order_status = 'delivered'
+  AND foi.shipping_days IS NOT NULL
+GROUP BY ds.seller_id, ds.seller_city, ds.seller_state
+HAVING COUNT(foi.order_item_key) >= 50
+ORDER BY avg_shipping_days ASC
+LIMIT 5",5,iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.dim_seller,43,False,False,1.0,1.0,1.0,passed,17.2,
+hard_04,hard,Tỷ lệ đơn hàng thanh toán bằng credit_card và có tổng số kỳ trả góp từ 6 trở lên.,True,True,True,"SELECT
+    COUNT(order_key) AS total_orders,
+    SUM(
+        CASE
+            WHEN primary_payment_type = 'credit_card'
+             AND total_installments >= 6
+            THEN 1 ELSE 0
+        END
+    ) AS matched_orders,
+    ROUND(
+        SUM(
+            CASE
+                WHEN primary_payment_type = 'credit_card'
+                 AND total_installments >= 6
+                THEN 1 ELSE 0
+            END
+        ) * 100.0 / COUNT(order_key),
+        2
+    ) AS matched_rate_pct
+FROM iceberg.gold.fact_order",1,iceberg.gold.fact_order|iceberg.gold.dim_customer|iceberg.gold.fact_order_item|iceberg.gold.dim_date,45,False,False,1.0,1.0,1.0,passed,14.64,
+hard_05,hard,Doanh thu item và số lượng item theo từng quý cho danh mục sản phẩm cama_mesa_banho.,True,False,True,"SELECT
+    dp.product_category_name_english AS category,
+    SUM(foi.item_total_value) AS total_revenue,
+    COUNT(foi.order_item_key) AS total_items_sold
+FROM iceberg.gold.fact_order_item foi
+JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
+WHERE dp.product_category_name_english = 'cama_mesa_banho'
+GROUP BY dp.product_category_name_english, d.quarter
+ORDER BY d.quarter, total_revenue DESC",0,iceberg.gold.fact_order_item|iceberg.gold.dim_product|iceberg.gold.dim_date|iceberg.gold.fact_order,33,False,False,1.0,1.0,1.0,row_count_below_min,19.3,
+hard_06,hard,"Khách hàng mua nhiều sản phẩm khác nhau nhất là ai, họ ở thành phố và tiểu bang nào?",True,True,True,"SELECT 
+    dc.customer_unique_id,
+    dc.customer_city,
+    dc.customer_state,
+    COUNT(DISTINCT foi.product_key) AS distinct_products,
+    COUNT(foi.order_item_key) AS total_items
+FROM 
+    iceberg.gold.fact_order_item foi
+JOIN 
+    iceberg.gold.dim_customer dc ON foi.customer_key = dc.customer_key
+WHERE 
+    foi.order_status = 'delivered'
+GROUP BY 
+    dc.customer_unique_id, dc.customer_city, dc.customer_state
+ORDER BY 
+    distinct_products DESC, total_items DESC
+LIMIT 1",1,iceberg.gold.dim_customer|iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.fact_order,41,False,False,1.0,1.0,1.0,passed,19.83,
+hard_07,hard,"Theo từng năm, trung bình mỗi đơn hàng có bao nhiêu item và giá trị thanh toán trung bình là bao nhiêu?",True,True,True,"SELECT 
+    d.year,
+    ROUND(AVG(fo.number_of_items), 2) AS avg_items_per_order,
+    ROUND(AVG(fo.total_payment_value), 2) AS avg_order_value,
+    COUNT(fo.order_key) AS total_orders
+FROM iceberg.gold.fact_order fo
+JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+GROUP BY d.year
+ORDER BY d.year",3,iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.dim_customer,31,False,False,1.0,1.0,1.0,passed,20.46,
+hard_08,hard,Tháng nào có tỷ lệ đơn hàng thanh toán bằng voucher cao nhất?,True,True,True,"SELECT 
+    d.month,
+    COUNT(fo.order_key) AS total_orders,
+    SUM(CASE WHEN fo.primary_payment_type = 'voucher' THEN 1 ELSE 0 END) AS voucher_orders,
+    ROUND(
+        SUM(CASE WHEN fo.primary_payment_type = 'voucher' THEN 1 ELSE 0 END) * 100.0
+        / COUNT(fo.order_key),
+        2
+    ) AS voucher_rate_pct
+FROM 
+    iceberg.gold.fact_order fo
+JOIN 
+    iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+GROUP BY 
+    d.month
+ORDER BY 
+    voucher_rate_pct DESC
+LIMIT 1",1,iceberg.gold.fact_order|iceberg.gold.dim_customer|iceberg.gold.dim_date|iceberg.gold.fact_order_item,42,False,False,1.0,1.0,1.0,passed,15.77,
+hard_09,hard,Thành phố nào có chênh lệch tuyệt đối lớn nhất giữa số lượng khách hàng và số lượng seller?,True,True,True,"WITH customer_counts AS (
+    SELECT
+        dc.customer_city AS city,
+        COUNT(dc.customer_key) AS total_customers
+    FROM iceberg.gold.dim_customer dc
+    GROUP BY dc.customer_city
+),
+seller_counts AS (
+    SELECT
+        ds.seller_city AS city,
+        COUNT(ds.seller_key) AS total_sellers
+    FROM iceberg.gold.dim_seller ds
+    GROUP BY ds.seller_city
+)
+SELECT
+    COALESCE(c.city, s.city) AS city,
+    COALESCE(c.total_customers, 0) AS total_customers,
+    COALESCE(s.total_sellers, 0) AS total_sellers,
+    ABS(COALESCE(c.total_customers, 0) - COALESCE(s.total_sellers, 0)) AS absolute_gap
+FROM customer_counts c
+FULL OUTER JOIN seller_counts s ON c.city = s.city
+ORDER BY absolute_gap DESC
+LIMIT 1",1,iceberg.gold.dim_customer|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.fact_order_item,26,False,False,1.0,1.0,1.0,passed,25.1,
+hard_10,hard,"Trong các ngày cuối tuần, top 3 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất là gì?",True,True,True,"SELECT 
+    dp.product_category_name_english AS category,
+    SUM(foi.item_total_value) AS total_revenue
+FROM 
+    iceberg.gold.fact_order_item foi
+JOIN 
+    iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+JOIN 
+    iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
+WHERE 
+    d.is_weekend = TRUE
+  AND foi.order_status = 'delivered'
+GROUP BY 
+    dp.product_category_name_english
+ORDER BY 
+    total_revenue DESC
+LIMIT 3",3,iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.dim_product|iceberg.gold.dim_seller,34,False,False,1.0,1.0,1.0,passed,14.47,

@@ -1,1 +1,9 @@
-invalid type: string "SELECT\n    dc.customer_state,\n    COUNT(fo.order_key) AS late_orders,\n    ROUND(AVG(fo.delivery_early_days), 2) AS avg_days_late\nFROM iceberg.gold.fact_order fo\nJOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key\nWHERE fo.order_status = 'delivered'\n  AND fo.delivery_early_days < 0\nGROUP BY dc.customer_state\nORDER BY late_orders DESC", expected i64n
+SELECT
+    CASE WHEN d.is_weekend = TRUE THEN 'Cuối tuần' ELSE 'Ngày thường' END AS day_type,
+    COUNT(fo.order_key) AS total_orders,
+    SUM(fo.total_payment_value) AS total_revenue,
+    ROUND(AVG(fo.total_payment_value), 2) AS avg_order_value
+FROM iceberg.gold.fact_order fo
+JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+GROUP BY d.is_weekend
+ORDER BY total_orders DESC

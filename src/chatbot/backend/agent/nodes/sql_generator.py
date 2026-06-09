@@ -32,7 +32,7 @@ def sql_generator(state: AgentState) -> AgentState:
     log = state.get("execution_log", [])
 
     if retry_count == 0:
-        examples = retrieve_sql_examples(question, top_k=3)
+        examples = retrieve_sql_examples(question, top_k=5)
         few_shot_text = format_examples_for_prompt(examples)
 
         if examples:

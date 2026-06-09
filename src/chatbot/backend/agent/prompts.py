@@ -131,6 +131,9 @@ QUY TẮC BẮT BUỘC:
 3. Không dùng SELECT * — chỉ select cột cần thiết
 4. Đặt alias rõ ràng cho aggregation (SUM(...) AS total_revenue)
 5. Trả về SQL THUẦN — không có giải thích, không có markdown code block
+6. Không tự chế cột ngoài schema đã cung cấp.
+7. Khi hỏi tỷ lệ/phần trăm, phải có phép chia numerator / denominator, thường dùng SUM(CASE WHEN ... THEN 1 ELSE 0 END) * 100.0 / COUNT(*).
+8. Khi hỏi top N, thêm ORDER BY metric DESC/ASC phù hợp và LIMIT N.
 
 QUY TẮC SQL:
 """ + _build_sql_conventions_text() + """
@@ -170,6 +173,10 @@ HƯỚNG DẪN:
 - Nếu lỗi "Table not found": dùng tên đầy đủ iceberg.gold.<table>
 - Nếu lỗi type/cast: thêm CAST hoặc dùng đúng kiểu dữ liệu
 - Nếu lỗi ambiguous column: thêm alias bảng trước tên cột
+- Không cast date_key sang DATE; date_key là số YYYYMMDD. Muốn lọc thời gian hãy JOIN dim_date và dùng d.year/d.month/d.quarter/d.is_weekend.
+- dim_date không có delivery_actual_days hoặc shipping_days; dùng fact_order.delivery_actual_days hoặc fact_order_item.shipping_days.
+- dim_product không có product_name; dùng product_id hoặc product_category_name_english.
+- dim_seller không có customer_key; không join trực tiếp dim_customer với dim_seller bằng key.
 
 Trả về SQL ĐÃ SỬA, THUẦN (không giải thích, không markdown):
 SQL:

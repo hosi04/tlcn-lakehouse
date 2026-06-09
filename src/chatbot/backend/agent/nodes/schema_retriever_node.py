@@ -1,6 +1,16 @@
 from src.chatbot.backend.agent.state import AgentState
-from src.chatbot.backend.retrieval.schema_indexer import get_collection
-from src.chatbot.backend.retrieval.reranker import rerank_schemas
+
+
+def get_collection():
+    from src.chatbot.backend.retrieval.schema_indexer import get_collection as _get_collection
+
+    return _get_collection()
+
+
+def rerank_schemas(question: str, candidates: list[dict], top_k: int = 4) -> list[dict]:
+    from src.chatbot.backend.retrieval.reranker import rerank_schemas as _rerank_schemas
+
+    return _rerank_schemas(question, candidates, top_k=top_k)
 
 
 def _query_chromadb(collection, query: str, top_k: int = 4) -> list[dict]:

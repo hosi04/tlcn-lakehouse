@@ -4,11 +4,43 @@ schema_rules:
       - "KHÔNG có cột 'quantity', 'qty', hay 'amount'."
       - "Dùng COUNT(foi.order_item_key) hoặc COUNT(*) để đếm số lượng item bán."
       - "Có các cột đo lường: item_price, item_freight_value, item_total_value."
+      - "Có shipping_days để tính thời gian giao hàng ở cấp item; dim_date KHÔNG có delivery_actual_days."
+      - "Join với dim_customer bằng foi.customer_key = dc.customer_key."
+      - "Join với dim_product bằng foi.product_key = dp.product_key."
+      - "Join với dim_seller bằng foi.seller_key = ds.seller_key."
+      - "Join với dim_date bằng foi.purchase_date_key hoặc foi.delivered_date_key = d.date_key."
 
   - table: fact_order
     notes:
       - "Có: total_payment_value, total_product_value, total_freight_value, number_of_items."
       - "Để lọc đơn hàng thành công: WHERE order_status = 'delivered'"
+      - "Có delivery_actual_days, delivery_estimate_days, delivery_early_days để phân tích giao hàng."
+      - "delivery_early_days < 0 nghĩa là giao trễ."
+      - "Join với dim_customer bằng fo.customer_key = dc.customer_key."
+      - "Join với dim_date bằng fo.purchase_date_key, fo.delivered_date_key hoặc fo.estimated_delivery_date_key = d.date_key."
+
+  - table: dim_date
+    notes:
+      - "date_key là số nguyên YYYYMMDD, KHÔNG cast date_key sang DATE."
+      - "Muốn lọc năm/tháng/quý thì dùng d.year, d.month, d.quarter."
+      - "Muốn lọc cuối tuần thì dùng d.is_weekend = TRUE; không so day_of_week với 'Saturday'/'Sunday'."
+      - "day_of_week là số, day_name là tên ngày."
+      - "dim_date không có delivery_actual_days, shipping_days hay purchase_date_key."
+
+  - table: dim_product
+    notes:
+      - "Không có cột product_name."
+      - "Dùng product_id để định danh sản phẩm và product_category_name_english để phân tích danh mục tiếng Anh."
+
+  - table: dim_customer
+    notes:
+      - "Không join trực tiếp dim_customer với dim_seller bằng customer_key/seller_key."
+      - "Nếu cần so sánh thành phố khách hàng và seller, aggregate từng bảng theo city rồi FULL OUTER JOIN theo tên city."
+
+  - table: dim_seller
+    notes:
+      - "Không có customer_key."
+      - "seller_city và seller_state là thuộc tính địa lý của người bán."
 
 sql_conventions:
   catalog: iceberg

@@ -1,0 +1,120 @@
+questions:
+  - id: "easy_01"
+    difficulty: "easy"
+    query: "Tổng giá trị thanh toán của tất cả đơn hàng là bao nhiêu?"
+
+  - id: "easy_02"
+    difficulty: "easy"
+    query: "Có bao nhiêu khách hàng trong bảng dim_customer?"
+
+  - id: "easy_03"
+    difficulty: "easy"
+    query: "Top 10 thành phố có nhiều khách hàng nhất trong dim_customer."
+
+  - id: "easy_04"
+    difficulty: "easy"
+    query: "Có bao nhiêu đơn hàng có trạng thái delivered trong fact_order?"
+
+  - id: "easy_05"
+    difficulty: "easy"
+    query: "Liệt kê trạng thái đơn hàng và số lượng đơn hàng theo từng trạng thái trong fact_order."
+
+  - id: "easy_06"
+    difficulty: "easy"
+    query: "Có bao nhiêu người bán trong bảng dim_seller?"
+
+  - id: "easy_07"
+    difficulty: "easy"
+    query: "Tổng phí vận chuyển của tất cả đơn hàng trong fact_order là bao nhiêu?"
+
+  - id: "easy_08"
+    difficulty: "easy"
+    query: "Top 10 sản phẩm có trọng lượng lớn nhất trong dim_product."
+
+  - id: "easy_09"
+    difficulty: "easy"
+    query: "Có bao nhiêu danh mục sản phẩm tiếng Anh khác nhau trong dim_product?"
+
+  - id: "easy_10"
+    difficulty: "easy"
+    query: "Giá trị thanh toán trung bình của mỗi đơn hàng trong fact_order là bao nhiêu?"
+
+  - id: "medium_01"
+    difficulty: "medium"
+    query: "Top 10 khách hàng có tổng giá trị thanh toán cao nhất, kèm thành phố và tiểu bang của khách hàng."
+
+  - id: "medium_02"
+    difficulty: "medium"
+    query: "Tổng giá trị thanh toán theo từng tháng trong năm 2017."
+
+  - id: "medium_03"
+    difficulty: "medium"
+    query: "Top 10 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất."
+
+  - id: "medium_04"
+    difficulty: "medium"
+    query: "Top 10 thành phố của seller có nhiều item bán ra nhất."
+
+  - id: "medium_05"
+    difficulty: "medium"
+    query: "Số lượng đơn hàng theo từng phương thức thanh toán chính trong fact_order."
+
+  - id: "medium_06"
+    difficulty: "medium"
+    query: "Thời gian giao hàng thực tế trung bình của các đơn hàng trong năm 2018 là bao nhiêu ngày?"
+
+  - id: "medium_07"
+    difficulty: "medium"
+    query: "Top 5 danh mục sản phẩm tiếng Anh bán chạy nhất theo số lượng item."
+
+  - id: "medium_08"
+    difficulty: "medium"
+    query: "Tổng giá trị thanh toán theo từng tiểu bang của khách hàng."
+
+  - id: "medium_09"
+    difficulty: "medium"
+    query: "Phí vận chuyển trung bình theo từng tiểu bang của khách hàng."
+
+  - id: "medium_10"
+    difficulty: "medium"
+    query: "Số lượng đơn hàng theo từng thứ trong tuần dựa trên ngày mua hàng."
+
+  - id: "hard_01"
+    difficulty: "hard"
+    query: "Tỷ lệ đơn hàng giao trễ theo từng tiểu bang của khách hàng trong năm 2018."
+
+  - id: "hard_02"
+    difficulty: "hard"
+    query: "Top 10 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất từ khách hàng ở thành phố sao paulo."
+
+  - id: "hard_03"
+    difficulty: "hard"
+    query: "Top 5 seller có thời gian giao hàng trung bình nhanh nhất, chỉ tính seller có ít nhất 50 item đã bán."
+
+  - id: "hard_04"
+    difficulty: "hard"
+    query: "Tỷ lệ đơn hàng thanh toán bằng credit_card và có tổng số kỳ trả góp từ 6 trở lên."
+
+  - id: "hard_05"
+    difficulty: "hard"
+    query: "Doanh thu item và số lượng item theo từng quý cho danh mục sản phẩm cama_mesa_banho."
+
+  - id: "hard_06"
+    difficulty: "hard"
+    query: "Khách hàng mua nhiều sản phẩm khác nhau nhất là ai, họ ở thành phố và tiểu bang nào?"
+
+  - id: "hard_07"
+    difficulty: "hard"
+    query: "Theo từng năm, trung bình mỗi đơn hàng có bao nhiêu item và giá trị thanh toán trung bình là bao nhiêu?"
+
+  - id: "hard_08"
+    difficulty: "hard"
+    query: "Tháng nào có tỷ lệ đơn hàng thanh toán bằng voucher cao nhất?"
+
+  - id: "hard_09"
+    difficulty: "hard"
+    query: "Thành phố nào có chênh lệch tuyệt đối lớn nhất giữa số lượng khách hàng và số lượng seller?"
+
+  - id: "hard_10"
+    difficulty: "hard"
+    query: "Trong các ngày cuối tuần, top 3 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất là gì?"

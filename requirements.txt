@@ -25,3 +25,4 @@ apache-airflow>=2.9.0
 boto3
 charset-normalizer
 prophet
+pytest

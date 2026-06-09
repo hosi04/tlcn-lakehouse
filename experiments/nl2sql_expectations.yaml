@@ -1,0 +1,141 @@
+expectations:
+  easy_01:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["sum", "total_payment_value"]
+
+  easy_02:
+    expected_tables: ["iceberg.gold.dim_customer"]
+    expected_sql_contains: ["count"]
+
+  easy_03:
+    expected_tables: ["iceberg.gold.dim_customer"]
+    expected_sql_contains: ["customer_city", "count", "group by", "order by"]
+
+  easy_04:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["count", "order_status", "delivered"]
+
+  easy_05:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["order_status", "count", "group by"]
+    forbidden_sql_contains:
+      - "where order_status = 'delivered'"
+      - "where fo.order_status = 'delivered'"
+
+  easy_06:
+    expected_tables: ["iceberg.gold.dim_seller"]
+    expected_sql_contains: ["count"]
+
+  easy_07:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["sum", "total_freight_value"]
+
+  easy_08:
+    expected_tables: ["iceberg.gold.dim_product"]
+    expected_sql_contains: ["product_weight_g", "order by"]
+
+  easy_09:
+    expected_tables: ["iceberg.gold.dim_product"]
+    expected_sql_contains: ["count", "distinct", "product_category_name_english"]
+
+  easy_10:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["avg", "total_payment_value"]
+    max_row_count: 1
+
+  medium_01:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_customer"]
+    expected_sql_contains: ["customer", "total_payment_value", "sum", "group by", "order by"]
+
+  medium_02:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_date"]
+    expected_sql_contains: ["2017", "month", "sum", "total_payment_value", "group by"]
+
+  medium_03:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_product"]
+    expected_any_sql_contains:
+      - ["product_category_name_english", "sum", "item_price", "group by", "order by"]
+      - ["product_category_name_english", "sum", "item_total_value", "group by", "order by"]
+
+  medium_04:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_seller"]
+    expected_sql_contains: ["seller_city", "count", "group by", "order by"]
+
+  medium_05:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["primary_payment_type", "count", "group by"]
+
+  medium_06:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_date"]
+    expected_sql_contains: ["2018", "avg", "delivery_actual_days"]
+
+  medium_07:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_product"]
+    expected_sql_contains: ["product_category_name_english", "count", "group by", "order by"]
+
+  medium_08:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_customer"]
+    expected_sql_contains: ["customer_state", "sum", "total_payment_value", "group by"]
+
+  medium_09:
+    expected_any_table_sets:
+      - ["iceberg.gold.fact_order", "iceberg.gold.dim_customer"]
+      - ["iceberg.gold.fact_order_item", "iceberg.gold.dim_customer"]
+    expected_any_sql_contains:
+      - ["customer_state", "avg", "total_freight_value", "group by"]
+      - ["customer_state", "avg", "item_freight_value", "group by"]
+
+  medium_10:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_date"]
+    expected_any_sql_contains:
+      - ["day_of_week", "count", "group by"]
+      - ["day_name", "count", "group by"]
+
+  hard_01:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_customer", "iceberg.gold.dim_date"]
+    expected_any_sql_contains:
+      - ["2018", "customer_state", "delivery_early_days", "/", "group by"]
+      - ["2018", "customer_state", "delivered_date_key", "estimated_delivery_date_key", "/", "group by"]
+
+  hard_02:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_product", "iceberg.gold.dim_customer"]
+    expected_any_sql_contains:
+      - ["sao paulo", "product_category_name_english", "sum", "item_price", "order by"]
+      - ["sao paulo", "product_category_name_english", "sum", "item_total_value", "order by"]
+
+  hard_03:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_seller"]
+    expected_sql_contains: ["seller", "avg", "shipping_days", "having", "50"]
+
+  hard_04:
+    expected_tables: ["iceberg.gold.fact_order"]
+    expected_sql_contains: ["credit_card", "total_installments", "/"]
+
+  hard_05:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_product", "iceberg.gold.dim_date"]
+    expected_any_sql_contains:
+      - ["cama_mesa_banho", "quarter", "sum", "item_price", "count"]
+      - ["cama_mesa_banho", "quarter", "sum", "item_total_value", "count"]
+
+  hard_06:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_customer"]
+    expected_sql_contains: ["count", "distinct", "product_key", "customer_city", "customer_state", "order by"]
+
+  hard_07:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_date"]
+    expected_sql_contains: ["year", "avg", "number_of_items", "total_payment_value"]
+
+  hard_08:
+    expected_tables: ["iceberg.gold.fact_order", "iceberg.gold.dim_date"]
+    expected_sql_contains: ["voucher", "month", "primary_payment_type", "group by", "order by"]
+
+  hard_09:
+    expected_any_table_sets:
+      - ["iceberg.gold.dim_customer", "iceberg.gold.dim_seller"]
+    expected_sql_contains: ["customer_city", "seller_city", "count", "abs"]
+
+  hard_10:
+    expected_tables: ["iceberg.gold.fact_order_item", "iceberg.gold.dim_product", "iceberg.gold.dim_date"]
+    expected_any_sql_contains:
+      - ["is_weekend", "product_category_name_english", "sum", "item_price", "order by"]
+      - ["is_weekend", "product_category_name_english", "sum", "item_total_value", "order by"]

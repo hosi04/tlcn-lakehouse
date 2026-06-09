@@ -28,6 +28,5 @@ class AgentState(TypedDict, total=False):
     row_count: int
     schemas_used: list[str]
     execution_log: list[str]
-
     analysis: str
     active_agent: str

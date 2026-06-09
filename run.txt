@@ -19,3 +19,6 @@ trino://trino@trino:8085/iceberg
 python -m src.mlops.revenue.trainer_lightgbm
 python -m src.mlops.revenue.trainer_lstm
 python -m src.mlops.revenue.trainer_prophet
+
+pytest tests\experiments tests\chatbot -q
+python -m experiments.run_all

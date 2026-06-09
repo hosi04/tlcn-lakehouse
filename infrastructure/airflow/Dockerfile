@@ -33,4 +33,6 @@ RUN pip install --no-cache-dir \
   psycopg2-binary \
   mlflow-skinny \
   pyspark==3.5.3 \
-  python-dotenv
+  python-dotenv \
+  minio \
+  pyyaml

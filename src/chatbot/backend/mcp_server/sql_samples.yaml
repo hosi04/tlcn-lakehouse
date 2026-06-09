@@ -267,3 +267,180 @@ samples:
       GROUP BY dp.product_category_name_english
       ORDER BY avg_freight DESC
       LIMIT 15
+
+  - id: "late_order_rate_by_customer_state_2018"
+    question: "Tỷ lệ đơn hàng giao trễ theo từng tiểu bang của khách hàng trong năm 2018"
+    tables: ["fact_order", "dim_customer", "dim_date"]
+    sql: |
+      SELECT
+          dc.customer_state,
+          COUNT(fo.order_key) AS total_orders,
+          SUM(CASE WHEN fo.delivery_early_days < 0 THEN 1 ELSE 0 END) AS late_orders,
+          ROUND(
+              SUM(CASE WHEN fo.delivery_early_days < 0 THEN 1 ELSE 0 END) * 100.0
+              / COUNT(fo.order_key),
+              2
+          ) AS late_rate_pct
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      WHERE d.year = 2018
+        AND fo.order_status = 'delivered'
+      GROUP BY dc.customer_state
+      ORDER BY late_rate_pct DESC
+
+  - id: "top_categories_revenue_sao_paulo_customers"
+    question: "Top danh mục sản phẩm có doanh thu cao nhất từ khách hàng ở sao paulo"
+    tables: ["fact_order_item", "dim_product", "dim_customer"]
+    sql: |
+      SELECT
+          dp.product_category_name_english AS category,
+          SUM(foi.item_total_value) AS total_revenue,
+          COUNT(foi.order_item_key) AS total_items
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+      JOIN iceberg.gold.dim_customer dc ON foi.customer_key = dc.customer_key
+      WHERE LOWER(dc.customer_city) = 'sao paulo'
+        AND foi.order_status = 'delivered'
+      GROUP BY dp.product_category_name_english
+      ORDER BY total_revenue DESC
+      LIMIT 10
+
+  - id: "fastest_sellers_min_50_items"
+    question: "Top seller có thời gian giao hàng trung bình nhanh nhất với tối thiểu 50 item"
+    tables: ["fact_order_item", "dim_seller"]
+    sql: |
+      SELECT
+          ds.seller_id,
+          ds.seller_city,
+          ds.seller_state,
+          ROUND(AVG(foi.shipping_days), 2) AS avg_shipping_days,
+          COUNT(foi.order_item_key) AS total_items
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key
+      WHERE foi.order_status = 'delivered'
+        AND foi.shipping_days IS NOT NULL
+      GROUP BY ds.seller_id, ds.seller_city, ds.seller_state
+      HAVING COUNT(foi.order_item_key) >= 50
+      ORDER BY avg_shipping_days ASC
+      LIMIT 5
+
+  - id: "credit_card_installment_rate"
+    question: "Tỷ lệ đơn hàng thanh toán bằng credit_card và có tổng số kỳ trả góp từ 6 trở lên"
+    tables: ["fact_order"]
+    sql: |
+      SELECT
+          COUNT(order_key) AS total_orders,
+          SUM(
+              CASE
+                  WHEN primary_payment_type = 'credit_card'
+                   AND total_installments >= 6
+                  THEN 1 ELSE 0
+              END
+          ) AS matched_orders,
+          ROUND(
+              SUM(
+                  CASE
+                      WHEN primary_payment_type = 'credit_card'
+                       AND total_installments >= 6
+                      THEN 1 ELSE 0
+                  END
+              ) * 100.0 / COUNT(order_key),
+              2
+          ) AS matched_rate_pct
+      FROM iceberg.gold.fact_order
+
+  - id: "customer_most_distinct_products"
+    question: "Khách hàng mua nhiều sản phẩm khác nhau nhất"
+    tables: ["fact_order_item", "dim_customer"]
+    sql: |
+      SELECT
+          dc.customer_unique_id,
+          dc.customer_city,
+          dc.customer_state,
+          COUNT(DISTINCT foi.product_key) AS distinct_products,
+          COUNT(foi.order_item_key) AS total_items
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_customer dc ON foi.customer_key = dc.customer_key
+      WHERE foi.order_status = 'delivered'
+      GROUP BY dc.customer_unique_id, dc.customer_city, dc.customer_state
+      ORDER BY distinct_products DESC, total_items DESC
+      LIMIT 1
+
+  - id: "yearly_avg_items_and_order_value"
+    question: "Theo từng năm trung bình mỗi đơn hàng có bao nhiêu item và giá trị thanh toán trung bình"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          d.year,
+          ROUND(AVG(fo.number_of_items), 2) AS avg_items_per_order,
+          ROUND(AVG(fo.total_payment_value), 2) AS avg_order_value,
+          COUNT(fo.order_key) AS total_orders
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      GROUP BY d.year
+      ORDER BY d.year
+
+  - id: "voucher_rate_by_month"
+    question: "Tháng có tỷ lệ đơn hàng thanh toán bằng voucher cao nhất"
+    tables: ["fact_order", "dim_date"]
+    sql: |
+      SELECT
+          d.month,
+          COUNT(fo.order_key) AS total_orders,
+          SUM(CASE WHEN fo.primary_payment_type = 'voucher' THEN 1 ELSE 0 END) AS voucher_orders,
+          ROUND(
+              SUM(CASE WHEN fo.primary_payment_type = 'voucher' THEN 1 ELSE 0 END) * 100.0
+              / COUNT(fo.order_key),
+              2
+          ) AS voucher_rate_pct
+      FROM iceberg.gold.fact_order fo
+      JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
+      GROUP BY d.month
+      ORDER BY voucher_rate_pct DESC
+      LIMIT 1
+
+  - id: "customer_seller_city_gap"
+    question: "Thành phố có chênh lệch lớn nhất giữa số lượng khách hàng và số lượng seller"
+    tables: ["dim_customer", "dim_seller"]
+    sql: |
+      WITH customer_counts AS (
+          SELECT
+              customer_city AS city,
+              COUNT(customer_key) AS total_customers
+          FROM iceberg.gold.dim_customer
+          GROUP BY customer_city
+      ),
+      seller_counts AS (
+          SELECT
+              seller_city AS city,
+              COUNT(seller_key) AS total_sellers
+          FROM iceberg.gold.dim_seller
+          GROUP BY seller_city
+      )
+      SELECT
+          COALESCE(c.city, s.city) AS city,
+          COALESCE(c.total_customers, 0) AS total_customers,
+          COALESCE(s.total_sellers, 0) AS total_sellers,
+          ABS(COALESCE(c.total_customers, 0) - COALESCE(s.total_sellers, 0)) AS absolute_gap
+      FROM customer_counts c
+      FULL OUTER JOIN seller_counts s ON c.city = s.city
+      ORDER BY absolute_gap DESC
+      LIMIT 1
+
+  - id: "weekend_top_categories_by_revenue"
+    question: "Cuối tuần top danh mục sản phẩm có doanh thu item cao nhất"
+    tables: ["fact_order_item", "dim_product", "dim_date"]
+    sql: |
+      SELECT
+          dp.product_category_name_english AS category,
+          SUM(foi.item_total_value) AS total_revenue,
+          COUNT(foi.order_item_key) AS total_items
+      FROM iceberg.gold.fact_order_item foi
+      JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
+      JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
+      WHERE d.is_weekend = TRUE
+        AND foi.order_status = 'delivered'
+      GROUP BY dp.product_category_name_english
+      ORDER BY total_revenue DESC
+      LIMIT 3
