@@ -78,22 +78,52 @@ Trả về ĐÚNG 3 dòng, mỗi dòng 1 câu hỏi phụ (không đánh số, k
 INTENT_PROMPT = """\
 Bạn là bộ phân loại ý định cho chatbot phân tích dữ liệu Lakehouse.
 
-Phân loại câu hỏi sau vào MỘT trong 3 nhóm:
-- "data_query": Câu hỏi yêu cầu truy vấn, phân tích, thống kê dữ liệu (doanh thu, đơn hàng, sản phẩm, khách hàng, seller, thời gian, ...)
+Phân loại câu hỏi sau vào MỘT trong 4 nhóm:
+- "what_if_simulation": Câu hỏi mô phỏng kịch bản tương lai, dự đoán doanh thu nếu đạt KPI nào đó (ví dụ: "Nếu tuần tới...", "Dự đoán doanh thu nếu active_customers đạt...", "Giả sử phòng marketing mang về...")
+- "data_query": Câu hỏi yêu cầu truy vấn, phân tích, thống kê dữ liệu hiện có trong database (doanh thu, đơn hàng, sản phẩm, khách hàng, seller, thời gian, ...)
 - "greeting": Chào hỏi, hỏi thăm, giới thiệu bản thân
 - "out_of_scope": Câu hỏi không liên quan đến dữ liệu (thời tiết, code, văn học, ...)
 
 Câu hỏi: {question}
 
-Trả lời ĐÚNG MỘT từ: data_query | greeting | out_of_scope
+Trả lời ĐÚNG MỘT từ: what_if_simulation | data_query | greeting | out_of_scope
 Nếu là greeting hoặc out_of_scope, thêm dòng thứ 2 là câu trả lời ngắn gọn bằng tiếng Việt.
 
 Ví dụ output:
+what_if_simulation
+---
 data_query
 ---
 greeting
 Xin chào! Tôi là trợ lý phân tích dữ liệu Lakehouse. Hãy hỏi tôi về doanh thu, đơn hàng, sản phẩm nhé!
 """
+
+
+WHAT_IF_PROMPT = """\
+Bạn là chuyên gia MLOps mô phỏng kịch bản kinh doanh (What-If Simulation Engine).
+Nhiệm vụ của bạn là trích xuất các tham số kịch bản quản trị từ câu hỏi của người dùng để nạp vào mô hình AI (LightGBM/Prophet/LSTM).
+
+CÂU HỎI CỦA NGƯỜI DÙNG: {question}
+
+Các tham số có thể trích xuất (nếu câu hỏi đề cập):
+- order_count (số đơn hàng)
+- active_customers_count (số khách hàng hoạt động)
+- avg_order_value (giá trị đơn hàng trung bình)
+- avg_delivery_days (số ngày giao hàng trung bình)
+- late_delivery_rate (tỷ lệ giao hàng trễ, ví dụ: 0.05 cho 5%)
+- credit_card_ratio (tỷ lệ thanh toán qua thẻ tín dụng)
+
+TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON THUẦN (chỉ trả về JSON, không giải thích, không markdown):
+{{
+    "order_count": <số hoặc null>,
+    "active_customers_count": <số hoặc null>,
+    "avg_order_value": <số hoặc null>,
+    "avg_delivery_days": <số hoặc null>,
+    "late_delivery_rate": <số hoặc null>,
+    "credit_card_ratio": <số hoặc null>
+}}
+"""
+
 
 
 COLUMN_PRUNE_PROMPT = """\

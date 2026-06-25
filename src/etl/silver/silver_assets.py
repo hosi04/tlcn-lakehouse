@@ -15,6 +15,12 @@ _BRONZE_NAMESPACE = "iceberg.bronze"
 _SILVER_NAMESPACE = "iceberg.silver"
 
 
+def read_from_iceberg(spark, table_name: str, namespace="iceberg.bronze"):
+    full_table_name = f"{namespace}.{table_name}"
+    logger.info("Reading from %s", full_table_name)
+    return spark.read.format("iceberg").load(full_table_name)
+
+
 def _write_to_silver(spark, df, table_name: str) -> dict:
     full_table = f"{_SILVER_NAMESPACE}.{table_name}"
     col_count = len(df.columns)
@@ -97,3 +103,5 @@ if __name__ == "__main__":
     )
     if failed:
         logger.warning("Failed tables: %s", [f["target"] for f in failed])
+        import sys
+        sys.exit(1)

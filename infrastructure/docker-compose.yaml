@@ -12,6 +12,7 @@ services:
       retries: 3
       start_period: 10s
     environment:
+      # DEV/DEMO ONLY — In production, inject secrets via Docker Swarm Secrets or HashiCorp Vault
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
     ports:
@@ -129,6 +130,7 @@ services:
       retries: 3
       start_period: 90s
     environment:
+      # DEV/DEMO ONLY — In production, inject database URI and secret key via external secure vault
       SUPERSET_DATABASE_URI: postgresql://superset:password@postgres/superset
       SUPERSET_SECRET_KEY: J8u340f9hfn349h8f349h8f
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
@@ -292,6 +294,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: "46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLt1-pAAoM="
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "lakehouse_secret_key_2025"
+      # DEV/DEMO ONLY — Set EXPOSE_CONFIG to false in production environments
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       LAKEHOUSE_PROJECT_DIR: /opt/project
       PYTHONPATH: /opt/project

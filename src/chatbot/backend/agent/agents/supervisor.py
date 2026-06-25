@@ -6,12 +6,18 @@ from src.chatbot.backend.agent.nodes.intent_classifier import intent_classifier
 
 
 def _route_after_intent(state: AgentState) -> str:
-    if state.get("intent") == "data_query":
+    if state.get("intent") in ("data_query", "what_if_simulation"):
         return "dispatch"
     return "end_early"
 
 
 def _dispatch(state: AgentState) -> AgentState:
+    if state.get("intent") == "what_if_simulation":
+        return {
+            "active_agent": "supervisor",
+            "execution_log": state.get("execution_log", [])
+            + ["[supervisor] Routing → what_if_agent (MLOps Simulation Engine)"],
+        }
     return {
         "active_agent": "supervisor",
         "execution_log": state.get("execution_log", [])

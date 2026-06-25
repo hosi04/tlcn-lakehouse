@@ -124,3 +124,5 @@ if __name__ == "__main__":
     )
     if failed:
         logger.warning("Failed sources: %s", [f["name"] for f in failed])
+        import sys
+        sys.exit(1)

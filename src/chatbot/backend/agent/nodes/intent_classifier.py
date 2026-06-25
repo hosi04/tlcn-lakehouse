@@ -11,7 +11,7 @@ def intent_classifier(state: AgentState) -> AgentState:
     lines = [l.strip() for l in response.splitlines() if l.strip()]
     intent = lines[0].lower() if lines else "data_query"
 
-    if intent not in ("data_query", "greeting", "out_of_scope"):
+    if intent not in ("what_if_simulation", "data_query", "greeting", "out_of_scope"):
         intent = "data_query"
 
     update: AgentState = {
@@ -20,9 +20,9 @@ def intent_classifier(state: AgentState) -> AgentState:
         + [f"[intent_classifier] intent={intent}"],
     }
 
-    if intent != "data_query" and len(lines) > 1:
+    if intent not in ("data_query", "what_if_simulation") and len(lines) > 1:
         update["direct_answer"] = "\n".join(lines[1:])
-    elif intent != "data_query":
+    elif intent not in ("data_query", "what_if_simulation"):
         update["direct_answer"] = (
             "Xin chào! Tôi là trợ lý phân tích dữ liệu Lakehouse."
             if intent == "greeting"

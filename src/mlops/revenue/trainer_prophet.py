@@ -22,6 +22,19 @@ logger = logging.getLogger(__name__)
 EXPERIMENT = "P1_Revenue_Forecasting"
 
 PROPHET_REGRESSORS = [
+    "order_count",
+    "active_customers_count",
+    "avg_order_value",
+    "avg_items_per_order",
+    "freight_revenue_ratio",
+    "avg_freight_per_item",
+    "avg_delivery_days",
+    "avg_estimate_days",
+    "late_delivery_rate",
+    "credit_card_ratio",
+    "avg_installments",
+    "weekend_order_ratio",
+    "active_sellers_count",
     "revenue_lag_1",
     "revenue_lag_2",
     "revenue_lag_4",

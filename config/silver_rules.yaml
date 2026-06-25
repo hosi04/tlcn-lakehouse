@@ -14,7 +14,7 @@ tables:
 
   - source: olist_products_dataset
     target: products
-    drop_nulls: true
+    drop_nulls: [product_id]
     drop_duplicates: true
     casts:
       product_description_length: integer

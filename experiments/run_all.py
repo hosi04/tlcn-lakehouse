@@ -37,6 +37,22 @@ def main():
         statuses.append(("NL2SQL", False))
 
 
+    _section("3/4  ABLATION STUDY")
+    try:
+        from experiments.ablation_benchmark import run_ablation_benchmark
+        statuses.append(("Ablation", bool(run_ablation_benchmark())))
+    except Exception as e:
+        logger.error("❌ Ablation Benchmark thất bại: %s", e)
+        statuses.append(("Ablation", False))
+
+    _section("4/4  ML MODEL BENCHMARK")
+    try:
+        from experiments.ml_benchmark import run_ml_benchmark
+        statuses.append(("ML", bool(run_ml_benchmark())))
+    except Exception as e:
+        logger.error("❌ ML Benchmark thất bại: %s", e)
+        statuses.append(("ML", False))
+
     elapsed = time.perf_counter() - start
     logger.info("\nBenchmark status:")
     for name, ok in statuses:

@@ -35,4 +35,9 @@ RUN pip install --no-cache-dir \
   pyspark==3.5.3 \
   python-dotenv \
   minio \
-  pyyaml
+  pyyaml \
+  pandas \
+  scikit-learn \
+  lightgbm \
+  prophet \
+  trino

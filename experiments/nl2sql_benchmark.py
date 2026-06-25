@@ -77,7 +77,7 @@ def run_single_query(question: dict) -> dict:
         had_error = any(
             kw in str(log)
             for log in exec_log
-            for kw in ("Lỗi", "fix", "Fix", "retry", "sửa")
+            for kw in ("Lỗi", "fix", "Fix", "retry", "sửa", "FAILED", "attempt=2")
         )
         evaluation = evaluate_nl2sql_result(question, data)
         self_healed = had_error and evaluation.execution_success

@@ -217,8 +217,8 @@ def fact_order_item(spark):
     
     df = (df_base
         .join(dim_customer, col("o.customer_id") == col("c.customer_id"), "inner")
-        .join(dim_product, col("oi.product_id") == col("p.product_id"), "inner")
-        .join(dim_seller, col("oi.seller_id") == col("s.seller_id"), "inner")
+        .join(dim_product, col("oi.product_id") == col("p.product_id"), "left")
+        .join(dim_seller, col("oi.seller_id") == col("s.seller_id"), "left")
         .join(
             dim_date.alias("purchase_date"),
             col("o.order_purchase_timestamp").cast("date") == col("purchase_date.date"),
@@ -313,7 +313,7 @@ def fact_order(spark):
     
     df = (df_orders_calc
         .join(df_order_agg, col("o.order_id") == col("agg_items.order_id"), "inner")
-        .join(df_payment_agg, col("o.order_id") == col("agg_pay.order_id"), "inner")
+        .join(df_payment_agg, col("o.order_id") == col("agg_pay.order_id"), "left")
         .join(dim_customer, col("o.customer_id") == col("c.customer_id"), "inner")
         .join(
             dim_date.alias("purchase_date"),
