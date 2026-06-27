@@ -49,13 +49,17 @@ CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages([
      "Bạn là trợ lý phân tích dữ liệu. Nhiệm vụ: dựa trên lịch sử hội thoại "
      "và câu hỏi mới, viết lại câu hỏi thành một câu ĐỘC LẬP, HOÀN CHỈNH "
      "bằng tiếng Việt.\n\n"
-     "QUY TẮC:\n"
+     "QUY TẮC BẮT BUỘC:\n"
      "- Nếu câu hỏi mới tham chiếu đến ngữ cảnh trước (\"cái đó\", \"thêm\", "
      "\"theo tháng nữa\", \"của năm 2017\"), hãy thay thế bằng nội dung cụ thể.\n"
      "- Nếu câu hỏi đã rõ ràng, giữ nguyên.\n"
-     "- Chỉ trả về DUY NHẤT 1 câu hỏi đã viết lại, không giải thích."),
+     "- TUYỆT ĐỐI KHÔNG TRẢ LỜI CÂU HỎI HAY TÓM TẮT DỮ LIỆU!!! CHỈ TRẢ VỀ DUY NHẤT 1 CÂU HỎI ĐÃ VIẾT LẠI."),
     MessagesPlaceholder("chat_history"),
-    ("human", "{input}"),
+    ("human", 
+     "LỊCH SỬ HỘI THOẠI BÊN TRÊN LÀ ĐỂ THAM KHẢO NGỮ CẢNH.\n\n"
+     "CÂU HỎI MỚI CỦA NGƯỜI DÙNG: {input}\n\n"
+     "NHIỆM VỤ BẮT BUỘC: Hãy viết lại CÂU HỎI MỚI thành một câu hỏi HOÀN CHỈNH, ĐỘC LẬP. "
+     "TUYỆT ĐỐI KHÔNG TRẢ LỜI CÂU HỎI HOẶC TẠO BÁO CÁO!!! CHỈ TRẢ VỀ DUY NHẤT CÂU HỎI ĐÃ VIẾT LẠI (hoặc giữ nguyên nếu đã rõ ràng)."),
 ])
 
 
@@ -164,6 +168,7 @@ QUY TẮC BẮT BUỘC:
 6. Không tự chế cột ngoài schema đã cung cấp.
 7. Khi hỏi tỷ lệ/phần trăm, phải có phép chia numerator / denominator, thường dùng SUM(CASE WHEN ... THEN 1 ELSE 0 END) * 100.0 / COUNT(*).
 8. Khi hỏi top N, thêm ORDER BY metric DESC/ASC phù hợp và LIMIT N.
+9. Trong bảng dim_date, cột `year` và `month` là kiểu số nguyên (integer). Để lọc năm hoặc tháng, hãy so sánh trực tiếp (ví dụ: `d.year = 2018`). TUYỆT ĐỐI KHÔNG DÙNG hàm `year(d.year)` hoặc `year(d.date_key)`.
 
 QUY TẮC SQL:
 """ + _build_sql_conventions_text() + """
@@ -204,6 +209,7 @@ HƯỚNG DẪN:
 - Nếu lỗi type/cast: thêm CAST hoặc dùng đúng kiểu dữ liệu
 - Nếu lỗi ambiguous column: thêm alias bảng trước tên cột
 - Không cast date_key sang DATE; date_key là số YYYYMMDD. Muốn lọc thời gian hãy JOIN dim_date và dùng d.year/d.month/d.quarter/d.is_weekend.
+- Trong bảng dim_date, cột `year` và `month` là kiểu số nguyên (integer). Để lọc năm hoặc tháng, hãy so sánh trực tiếp (ví dụ: `d.year = 2018`). TUYỆT ĐỐI KHÔNG DÙNG hàm `year(d.year)` hoặc `year(d.date_key)`.
 - dim_date không có delivery_actual_days hoặc shipping_days; dùng fact_order.delivery_actual_days hoặc fact_order_item.shipping_days.
 - dim_product không có product_name; dùng product_id hoặc product_category_name_english.
 - dim_seller không có customer_key; không join trực tiếp dim_customer với dim_seller bằng key.
@@ -234,10 +240,13 @@ NHIỆM VỤ — Phân tích kết quả và trả lời theo 3 phần:
 
 💡 **Gợi ý hành động:** Đề xuất 1-2 hành động cụ thể mà doanh nghiệp nên thực hiện dựa trên dữ liệu này
 
-QUY TẮC:
-- Trả lời bằng tiếng Việt
-- Ngắn gọn, rõ ràng, dùng con số cụ thể từ kết quả
-- Nếu dữ liệu có số tiền, đơn vị là BRL (Real Brazil)
-- Nếu kết quả ít dữ liệu (<3 dòng), vẫn phân tích đầy đủ
-- Dùng emoji để trực quan hóa
+QUY TẮC BẮT BUỘC (TUYỆT ĐỐI TUÂN THỦ):
+1. ĐỌC KỸ BẢNG KẾT QUẢ VÀ TUYỆT ĐỐI SỬ DỤNG MỤC `[THỐNG KÊ NHANH TỪ HỆ THỐNG (DÀNH CHO BÁO CÁO)]`: 
+   - Phần Tóm tắt phải nêu chính xác con số Tổng (Sum) từ mục thống kê nhanh.
+   - Phần Insight phải nêu chính xác Đỉnh cao nhất (Max) rơi vào dòng nào (tháng/năm nào) và Thấp nhất (Min) rơi vào dòng nào theo đúng số liệu trong mục thống kê nhanh.
+2. TUYỆT ĐỐI KHÔNG TỰ SO SÁNH HOẶC KẾT LUẬN BỪA (Ví dụ: Tháng 4 là 1,132,933.95 lớn hơn Tháng 7 là 1,027,903.86, do đó đỉnh cao nhất là Tháng 4, KHÔNG ĐƯỢC KẾT LUẬN SAI THÀNH THÁNG 7!!!).
+3. TUYỆT ĐỐI KHÔNG BỊA ĐẶT HOẶC KHÁI QUÁT HÓA TÊN SẢN PHẨM/DANH MỤC/CON SỐ (KHÔNG DÙNG "Sản phẩm A, B", KHÔNG TỰ Ý ĐOÁN MÒ SỐ TIỀN).
+4. Trả lời bằng tiếng Việt chuyên nghiệp, văn phong mạch lạc, tường minh. Dùng đơn vị tiền là BRL (ví dụ: 1.08 triệu BRL hoặc 8.45 triệu BRL).
+5. Nếu kết quả ít dữ liệu (<3 dòng), vẫn phân tích đầy đủ.
+6. Dùng emoji để trực quan hóa báo cáo.
 """
