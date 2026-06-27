@@ -15,7 +15,7 @@ default_args = {
 with DAG(
     dag_id="events_silver_gold",
     default_args=default_args,
-    schedule="*/15 * * * *",
+    schedule="*/5 * * * *",
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=["events", "lakehouse"],
