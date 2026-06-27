@@ -3,6 +3,15 @@ from src.chatbot.backend.agent.prompts import ANALYST_PROMPT
 from src.chatbot.backend.llm_connector import get_llm
 
 
+def _format_val(k: str, v: any) -> str:
+    if isinstance(v, (int, float)) and not k.endswith(("_id", "_key", "year", "month", "day")):
+        try:
+            return f"{v:,.2f}"
+        except Exception:
+            return str(v)
+    return str(v)
+
+
 def _summarize_result(rows: list[dict], columns: list[str], max_rows: int = 20) -> str:
     if not rows:
         return "Không có dữ liệu trả về."
@@ -14,11 +23,37 @@ def _summarize_result(rows: list[dict], columns: list[str], max_rows: int = 20) 
     lines.append("")
 
     for i, row in enumerate(sample):
-        row_str = " | ".join(f"{k}={v}" for k, v in row.items())
+        row_str = " | ".join(f"{k}={_format_val(k, v)}" for k, v in row.items())
         lines.append(f"  [{i+1}] {row_str}")
 
     if total > max_rows:
         lines.append(f"  ... và {total - max_rows} dòng nữa")
+
+    lines.append("\n[THỐNG KÊ NHANH TỪ HỆ THỐNG (DÀNH CHO BÁO CÁO)]:")
+    num_cols = [
+        c for c in columns
+        if not c.endswith(("_id", "_key", "year", "month", "day", "date"))
+        and any(isinstance(r.get(c), (int, float)) for r in rows)
+    ]
+
+    for col_name in num_cols:
+        valid_vals = [r[col_name] for r in rows if isinstance(r.get(col_name), (int, float))]
+        if valid_vals:
+            total_val = sum(valid_vals)
+            max_val = max(valid_vals)
+            min_val = min(valid_vals)
+
+            max_row = next((r for r in rows if r.get(col_name) == max_val), {})
+            min_row = next((r for r in rows if r.get(col_name) == min_val), {})
+
+            max_lbl = ", ".join(f"{k}={v}" for k, v in max_row.items() if k != col_name)
+            min_lbl = ", ".join(f"{k}={v}" for k, v in min_row.items() if k != col_name)
+
+            lines.append(
+                f"- Cột '{col_name}': Tổng = {_format_val(col_name, total_val)} | "
+                f"Đỉnh cao nhất (Max) = {_format_val(col_name, max_val)} ({max_lbl}) | "
+                f"Thấp nhất (Min) = {_format_val(col_name, min_val)} ({min_lbl})"
+            )
 
     return "\n".join(lines)
 

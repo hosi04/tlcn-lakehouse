@@ -17,41 +17,41 @@ st.markdown("""
 
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-    /* ── Global text — đảm bảo text luôn sáng trên nền dark ── */
+    /* ── Global text — đảm bảo text nét sáng sủa trên nền light ── */
     [data-testid="stMarkdownContainer"] p,
     [data-testid="stMarkdownContainer"] li,
     [data-testid="stMarkdownContainer"] ul li,
     [data-testid="stMarkdownContainer"] ol li {
-        color: #cbd5e1 !important;
-        line-height: 1.75;
+        color: #1e293b !important;
+        line_height: 1.75;
     }
     [data-testid="stMarkdownContainer"] h1,
     [data-testid="stMarkdownContainer"] h2,
     [data-testid="stMarkdownContainer"] h3,
     [data-testid="stMarkdownContainer"] h4 {
-        color: #c7d2fe !important;
+        color: #1e1b4b !important;
         margin-top: 8px;
         margin-bottom: 4px;
     }
     [data-testid="stMarkdownContainer"] strong,
     [data-testid="stMarkdownContainer"] b {
-        color: #a78bfa !important;
+        color: #4f46e5 !important;
     }
 
     /* ── Chat header ── */
     .chat-header {
-        background: linear-gradient(135deg, #1a1f36 0%, #0d1b2a 100%);
+        background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
         border: 1px solid rgba(99,102,241,0.3);
         border-radius: 16px;
         padding: 20px 28px;
         margin-bottom: 20px;
     }
     .chat-header h1 {
-        color: #e2e8f0 !important;
+        color: #1e1b4b !important;
         font-size: 1.6rem; margin: 0; font-weight: 700;
     }
     .chat-header p {
-        color: #94a3b8 !important;
+        color: #475569 !important;
         margin: 4px 0 0 0; font-size: 0.9rem;
     }
 
@@ -67,8 +67,8 @@ st.markdown("""
 
     /* ── KPI card ── */
     .kpi-card {
-        background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
-        border: 1px solid rgba(167,139,250,0.4);
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border: 1px solid rgba(99,102,241,0.4);
         border-radius: 16px;
         padding: 28px;
         text-align: center;
@@ -76,19 +76,19 @@ st.markdown("""
     }
     .kpi-value {
         font-size: 2.8rem; font-weight: 700;
-        color: #a78bfa !important; line-height: 1.2;
+        color: #312e81 !important; line-height: 1.2;
     }
     .kpi-label {
-        color: #94a3b8 !important;
+        color: #475569 !important;
         font-size: 0.9rem; margin-top: 8px;
     }
 
     /* ── Meta pills ── */
     .meta-pill {
         display: inline-block;
-        background: rgba(99,102,241,0.15);
+        background: #f1f5f9;
         border: 1px solid rgba(99,102,241,0.3);
-        color: #818cf8 !important;
+        color: #4f46e5 !important;
         padding: 3px 10px;
         border-radius: 20px;
         font-size: 0.78rem;
@@ -97,21 +97,21 @@ st.markdown("""
 
     /* ── Input box ── */
     .stTextInput > div > div > input {
-        background: #1e293b !important;
+        background: #ffffff !important;
         border: 1px solid rgba(99,102,241,0.4) !important;
         border-radius: 12px !important;
-        color: #e2e8f0 !important;
+        color: #1e293b !important;
     }
 
     /* ── Sidebar text ── */
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] p {
-        color: #cbd5e1 !important;
+        color: #1e293b !important;
     }
 
     /* ── Expander ── */
     [data-testid="stExpander"] summary {
-        color: #94a3b8 !important;
+        color: #475569 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -122,7 +122,7 @@ with st.sidebar:
     st.markdown("""
     <div style='text-align:center; padding: 16px 0 8px 0;'>
         <span style='font-size: 2.5rem;'>🏔️</span>
-        <h2 style='color: #e2e8f0; margin: 8px 0 4px 0; font-size: 1.2rem;'>Lakehouse AI Analyst</h2>
+        <h2 style='color: #1e1b4b; margin: 8px 0 4px 0; font-size: 1.2rem;'>Lakehouse AI Analyst</h2>
         <p style='color: #64748b; font-size: 0.8rem; margin: 0;'>Powered by Agent + RAG</p>
     </div>
     """, unsafe_allow_html=True)
@@ -284,6 +284,7 @@ if user_input:
                     render_debug_panel(msg)
 
                 st.session_state.chat_history.append(msg)
+                st.rerun()
 
             except requests.exceptions.ConnectionError:
                 err = "❌ Không kết nối được backend. Kiểm tra uvicorn đang chạy trên port 8000."
@@ -291,6 +292,7 @@ if user_input:
                 st.session_state.chat_history.append({
                     "role": "assistant", "direct_answer": err, "intent": "out_of_scope",
                 })
+                st.rerun()
             except requests.exceptions.HTTPError as e:
                 detail = ""
                 try:
@@ -302,9 +304,11 @@ if user_input:
                 st.session_state.chat_history.append({
                     "role": "assistant", "direct_answer": err, "intent": "out_of_scope",
                 })
+                st.rerun()
             except Exception as e:
                 err = f"❌ Lỗi: {str(e)}"
                 st.error(err)
                 st.session_state.chat_history.append({
                     "role": "assistant", "direct_answer": err, "intent": "out_of_scope",
                 })
+                st.rerun()
