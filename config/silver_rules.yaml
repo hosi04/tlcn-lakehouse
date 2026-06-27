@@ -49,7 +49,7 @@ tables:
     casts:
       review_score: integer
     drop_columns: [review_comment_title]
-    drop_nulls: true
+    drop_nulls: [review_id, order_id, review_score]
 
   - source: product_category_name_translation
     target: product_category
@@ -58,7 +58,7 @@ tables:
 
   - source: olist_orders_dataset
     target: orders
-    drop_nulls: true
+    drop_nulls: [order_id, customer_id]
     drop_duplicates:
       subset: [order_id]
 
