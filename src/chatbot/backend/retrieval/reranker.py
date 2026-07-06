@@ -11,7 +11,7 @@ RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 @lru_cache(maxsize=1)
 def _get_reranker() -> CrossEncoder:
     logger.info("[Reranker] Loading %s...", RERANKER_MODEL)
-    model = CrossEncoder(RERANKER_MODEL)
+    model = CrossEncoder(RERANKER_MODEL, device="cpu")
     logger.info("[Reranker] Model loaded.")
     return model
 
@@ -35,7 +35,7 @@ def rerank_schemas(
     reranker = _get_reranker()
 
     pairs = [(question, c["document"]) for c in candidates]
-    scores = reranker.predict(pairs)
+    scores = reranker.predict(pairs, show_progress_bar=False)
 
     for candidate, score in zip(candidates, scores):
         candidate["rerank_score"] = float(score)

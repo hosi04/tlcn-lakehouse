@@ -22,7 +22,8 @@ SQL_SAMPLE_COLLECTION = "sql_samples"
 @lru_cache(maxsize=1)
 def _get_embedding_function():
     return embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name="all-MiniLM-L6-v2"
+        model_name="all-MiniLM-L6-v2",
+        device="cpu"
     )
 
 

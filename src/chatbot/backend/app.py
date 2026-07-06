@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import warnings
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -21,6 +23,15 @@ from src.chatbot.backend.chat_history import (
     add_ai_message,
     clear_history,
 )
+
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+warnings.filterwarnings("ignore")
+
+logging.getLogger("httpx").setLevel(logging.ERROR)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
 

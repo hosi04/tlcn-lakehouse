@@ -26,3 +26,4 @@ boto3
 charset-normalizer
 prophet
 pytest
+charset-normalizer

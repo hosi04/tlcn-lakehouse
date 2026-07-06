@@ -10,6 +10,7 @@ def load_revenue_data(spark: SparkSession = None) -> pd.DataFrame:
     _owns_spark = spark is None
     if _owns_spark:
         spark = get_spark_session("MLOps-Revenue")
+        spark.sparkContext.setLogLevel("ERROR")
     logger.info("[data_loader] Loading feature-rich weekly revenue data...")
     try:
         df = spark.sql("""

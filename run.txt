@@ -1,8 +1,8 @@
 # Terminal 1: Spark streaming Kafka -> bronze (long-running)
 python -m src.etl.bronze.bronze_events
 
-# Airflow UI: http://localhost:8082 (airflow/airflow) — DAG events_silver_gold mỗi 15 phút
-python -m src.streaming.generator
+# Airflow UI: http://localhost:8082 (airflow/airflow) — DAG events_silver_gold mỗi 5 phút
+python -m src.etl.streaming.generator
 python -m src.etl.bronze.bronze_assets
 python -m src.etl.silver.silver_events      # incremental MERGE (default)
 python -m src.etl.gold.gold_events          # batch overwrite after silver
@@ -12,6 +12,7 @@ python -m src.etl.gold.gold_assets
 
 uvicorn src.chatbot.backend.app:app --host 0.0.0.0 --port 8000
 streamlit run src/chatbot/frontend/ui.py
+uvicorn src.mlops.serving.app:app --host 0.0.0.0 --port 8001
 
 
 trino://trino@trino:8085/iceberg
@@ -22,3 +23,6 @@ python -m src.mlops.revenue.trainer_prophet
 
 pytest tests\experiments tests\chatbot -q
 python -m experiments.run_all
+
+
+Nếu tuần tới có 8.000 đơn hàng và giá trị đơn hàng trung bình là 180 BRL thì doanh thu dự kiến là bao nhiêu?
