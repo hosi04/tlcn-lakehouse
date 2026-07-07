@@ -1,120 +1,709 @@
 questions:
+  # ============================================================
+  # EASY (30 câu) - Truy vấn 1 bảng, hàm đơn giản
+  # ============================================================
   - id: "easy_01"
     difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["SUM"]
     query: "Tổng giá trị thanh toán của tất cả đơn hàng là bao nhiêu?"
 
   - id: "easy_02"
     difficulty: "easy"
+    category: "count"
+    tables_required: ["dim_customer"]
+    sql_concepts: ["COUNT"]
     query: "Có bao nhiêu khách hàng trong bảng dim_customer?"
 
   - id: "easy_03"
     difficulty: "easy"
+    category: "top_n"
+    tables_required: ["dim_customer"]
+    sql_concepts: ["COUNT", "GROUP BY", "ORDER BY", "LIMIT"]
     query: "Top 10 thành phố có nhiều khách hàng nhất trong dim_customer."
 
   - id: "easy_04"
     difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
     query: "Có bao nhiêu đơn hàng có trạng thái delivered trong fact_order?"
 
   - id: "easy_05"
     difficulty: "easy"
-    query: "Liệt kê trạng thái đơn hàng và số lượng đơn hàng theo từng trạng thái trong fact_order."
+    category: "group_by"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "GROUP BY"]
+    query: "Liệt kê TẤT CẢ trạng thái đơn hàng (không lọc trạng thái) và số lượng đơn hàng theo từng trạng thái trong fact_order."
 
   - id: "easy_06"
     difficulty: "easy"
+    category: "count"
+    tables_required: ["dim_seller"]
+    sql_concepts: ["COUNT"]
     query: "Có bao nhiêu người bán trong bảng dim_seller?"
 
   - id: "easy_07"
     difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["SUM"]
     query: "Tổng phí vận chuyển của tất cả đơn hàng trong fact_order là bao nhiêu?"
 
   - id: "easy_08"
     difficulty: "easy"
+    category: "top_n"
+    tables_required: ["dim_product"]
+    sql_concepts: ["ORDER BY", "LIMIT"]
     query: "Top 10 sản phẩm có trọng lượng lớn nhất trong dim_product."
 
   - id: "easy_09"
     difficulty: "easy"
+    category: "distinct"
+    tables_required: ["dim_product"]
+    sql_concepts: ["COUNT", "DISTINCT"]
     query: "Có bao nhiêu danh mục sản phẩm tiếng Anh khác nhau trong dim_product?"
 
   - id: "easy_10"
     difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["AVG"]
     query: "Giá trị thanh toán trung bình của mỗi đơn hàng trong fact_order là bao nhiêu?"
 
+  - id: "easy_11"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["MAX", "MIN"]
+    query: "Giá trị đơn hàng lớn nhất và nhỏ nhất trong fact_order là bao nhiêu?"
+
+  - id: "easy_12"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
+    query: "Có bao nhiêu đơn hàng bị hủy (canceled) trong fact_order?"
+
+  - id: "easy_13"
+    difficulty: "easy"
+    category: "group_by"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "GROUP BY", "ORDER BY"]
+    query: "Số lượng đơn hàng theo từng phương thức thanh toán chính là bao nhiêu?"
+
+  - id: "easy_14"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["AVG"]
+    query: "Thời gian giao hàng thực tế trung bình của tất cả đơn hàng là bao nhiêu ngày?"
+
+  - id: "easy_15"
+    difficulty: "easy"
+    category: "top_n"
+    tables_required: ["dim_customer"]
+    sql_concepts: ["COUNT", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 5 tiểu bang có nhiều khách hàng nhất."
+
+  - id: "easy_16"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["AVG", "WHERE"]
+    query: "Số kỳ trả góp trung bình của các đơn hàng thanh toán bằng credit_card là bao nhiêu?"
+
+  - id: "easy_17"
+    difficulty: "easy"
+    category: "count"
+    tables_required: ["dim_product"]
+    sql_concepts: ["COUNT"]
+    query: "Có bao nhiêu sản phẩm trong bảng dim_product?"
+
+  - id: "easy_18"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["SUM"]
+    query: "Tổng giá trị sản phẩm (không bao gồm phí ship) của tất cả đơn hàng là bao nhiêu?"
+
+  - id: "easy_19"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
+    query: "Có bao nhiêu đơn hàng có nhiều hơn 3 item?"
+
+  - id: "easy_20"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["AVG"]
+    query: "Trung bình mỗi đơn hàng có bao nhiêu item (không nhóm theo năm)?"
+
+  - id: "easy_21"
+    difficulty: "easy"
+    category: "top_n"
+    tables_required: ["dim_seller"]
+    sql_concepts: ["COUNT", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 5 tiểu bang có nhiều seller nhất."
+
+  - id: "easy_22"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
+    query: "Có bao nhiêu đơn hàng được giao sớm hơn dự kiến (delivery_early_days > 0)?"
+
+  - id: "easy_23"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
+    query: "Có bao nhiêu đơn hàng bị giao trễ hơn dự kiến (delivery_early_days < 0)?"
+
+  - id: "easy_24"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["AVG"]
+    query: "Thời gian giao hàng dự kiến trung bình (cột delivery_estimate_days, KHÔNG join với dim_date) là bao nhiêu ngày?"
+
+  - id: "easy_25"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
+    query: "Có bao nhiêu đơn hàng thanh toán bằng boleto?"
+
+  - id: "easy_26"
+    difficulty: "easy"
+    category: "basic_select"
+    tables_required: ["dim_product"]
+    sql_concepts: ["ORDER BY", "LIMIT"]
+    query: "Top 5 sản phẩm có chiều dài (cột product_length_cm) lớn nhất trong dim_product."
+
+  - id: "easy_27"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["MAX"]
+    query: "Đơn hàng có thời gian giao hàng thực tế dài nhất là bao nhiêu ngày?"
+
+  - id: "easy_28"
+    difficulty: "easy"
+    category: "group_by"
+    tables_required: ["dim_seller"]
+    sql_concepts: ["COUNT", "GROUP BY", "ORDER BY"]
+    query: "Số lượng seller theo từng tiểu bang."
+
+  - id: "easy_29"
+    difficulty: "easy"
+    category: "filter"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "WHERE"]
+    query: "Có bao nhiêu đơn hàng có tổng giá trị thanh toán trên 500?"
+
+  - id: "easy_30"
+    difficulty: "easy"
+    category: "aggregation"
+    tables_required: ["fact_order"]
+    sql_concepts: ["SUM", "WHERE"]
+    query: "Tổng phí vận chuyển của các đơn hàng thanh toán bằng voucher là bao nhiêu?"
+
+  # ============================================================
+  # MEDIUM (40 câu) - JOIN 2 bảng, lọc kết hợp
+  # ============================================================
   - id: "medium_01"
     difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY", "LIMIT"]
     query: "Top 10 khách hàng có tổng giá trị thanh toán cao nhất, kèm thành phố và tiểu bang của khách hàng."
 
   - id: "medium_02"
     difficulty: "medium"
+    category: "time_series"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "WHERE"]
     query: "Tổng giá trị thanh toán theo từng tháng trong năm 2017."
 
   - id: "medium_03"
     difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY", "LIMIT"]
     query: "Top 10 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất."
 
   - id: "medium_04"
     difficulty: "medium"
-    query: "Top 10 thành phố của seller có nhiều item bán ra nhất."
+    category: "join_group"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 10 thành phố của seller có nhiều item bán ra nhất (chỉ join fact_order_item và dim_seller, KHÔNG join dim_customer)."
 
   - id: "medium_05"
     difficulty: "medium"
+    category: "group_by"
+    tables_required: ["fact_order"]
+    sql_concepts: ["COUNT", "GROUP BY"]
     query: "Số lượng đơn hàng theo từng phương thức thanh toán chính trong fact_order."
 
   - id: "medium_06"
     difficulty: "medium"
+    category: "time_filter"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "AVG", "WHERE"]
     query: "Thời gian giao hàng thực tế trung bình của các đơn hàng trong năm 2018 là bao nhiêu ngày?"
 
   - id: "medium_07"
     difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY", "ORDER BY", "LIMIT"]
     query: "Top 5 danh mục sản phẩm tiếng Anh bán chạy nhất theo số lượng item."
 
   - id: "medium_08"
     difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY"]
     query: "Tổng giá trị thanh toán theo từng tiểu bang của khách hàng."
 
   - id: "medium_09"
     difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY"]
     query: "Phí vận chuyển trung bình theo từng tiểu bang của khách hàng."
 
   - id: "medium_10"
     difficulty: "medium"
+    category: "time_pattern"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY"]
     query: "Số lượng đơn hàng theo từng thứ trong tuần dựa trên ngày mua hàng."
 
+  - id: "medium_11"
+    difficulty: "medium"
+    category: "time_series"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "WHERE"]
+    query: "Tổng giá trị thanh toán theo từng quý (sử dụng cột quarter) trong năm 2017 và 2018."
+
+  - id: "medium_12"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY", "ORDER BY"]
+    query: "Số lượng đơn hàng theo từng tiểu bang của khách hàng, sắp xếp giảm dần."
+
+  - id: "medium_13"
+    difficulty: "medium"
+    category: "join_filter"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY"]
+    query: "Tổng doanh thu (item_price) theo từng tiểu bang của seller."
+
+  - id: "medium_14"
+    difficulty: "medium"
+    category: "time_filter"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE"]
+    query: "Số lượng đơn hàng được đặt trong tháng 11 năm 2017 (tháng được lưu dưới dạng số int) là bao nhiêu?"
+
+  - id: "medium_15"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY", "ORDER BY"]
+    query: "Giá trung bình của sản phẩm theo từng danh mục tiếng Anh, sắp xếp từ cao đến thấp."
+
+  - id: "medium_16"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 10 thành phố có giá trị đơn hàng trung bình cao nhất."
+
+  - id: "medium_17"
+    difficulty: "medium"
+    category: "join_filter"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE", "GROUP BY"]
+    query: "Top 10 seller (theo seller_id) có nhiều item bán ra nhất."
+
+  - id: "medium_18"
+    difficulty: "medium"
+    category: "time_series"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "AVG", "GROUP BY"]
+    query: "Theo từng năm, tổng doanh thu và số lượng đơn hàng là bao nhiêu?"
+
+  - id: "medium_19"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "SUM", "AVG", "GROUP BY", "ORDER BY"]
+    query: "Tổng phí vận chuyển và phí vận chuyển trung bình theo từng danh mục sản phẩm tiếng Anh."
+
+  - id: "medium_20"
+    difficulty: "medium"
+    category: "time_pattern"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "WHERE", "GROUP BY"]
+    query: "Tổng doanh thu trong các ngày cuối tuần so với ngày thường trong năm 2018."
+
+  - id: "medium_21"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY"]
+    query: "Thời gian giao hàng thực tế trung bình theo từng tiểu bang của khách hàng."
+
+  - id: "medium_22"
+    difficulty: "medium"
+    category: "join_filter"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE", "GROUP BY"]
+    query: "Số lượng item bán ra theo từng danh mục trong năm 2017."
+
+  - id: "medium_23"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE", "GROUP BY"]
+    query: "Số lượng khách hàng đặt đơn lần đầu trong từng tháng của năm 2017."
+
+  - id: "medium_24"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY", "ORDER BY"]
+    query: "Phí vận chuyển trung bình theo từng tiểu bang của seller."
+
+  - id: "medium_25"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "SUM", "GROUP BY"]
+    query: "Số đơn hàng và tổng doanh thu theo từng tháng trong năm 2016."
+
+  - id: "medium_26"
+    difficulty: "medium"
+    category: "join_filter"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "WHERE"]
+    query: "Tổng doanh thu từ khách hàng có mã tiểu bang là SP (São Paulo) là bao nhiêu?"
+
+  - id: "medium_27"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY", "HAVING"]
+    query: "Các danh mục sản phẩm có hơn 500 item đã bán."
+
+  - id: "medium_28"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY"]
+    query: "Thời gian giao hàng trung bình theo từng quý."
+
+  - id: "medium_29"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY"]
+    query: "Top 5 thành phố của khách hàng (customer_city) có tổng phí vận chuyển cao nhất."
+
+  - id: "medium_30"
+    difficulty: "medium"
+    category: "date_filter"
+    tables_required: ["fact_order_item", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE"]
+    query: "Tổng số lượng (đếm bằng COUNT(order_item_key), KHÔNG dùng lồng SUM(COUNT)) item bán ra trong quý 4 năm 2017."
+
+  - id: "medium_31"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY", "ORDER BY"]
+    query: "Top 10 thành phố có tỷ lệ đơn hàng giao trễ cao nhất (delivery_early_days < 0)."
+
+  - id: "medium_32"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 5 danh mục sản phẩm có tổng phí vận chuyển cao nhất."
+
+  - id: "medium_33"
+    difficulty: "medium"
+    category: "time_filter"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "WHERE"]
+    query: "Tổng doanh thu trong tháng 11 và tháng 12 năm 2017."
+
+  - id: "medium_34"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "COUNT", "DISTINCT", "GROUP BY"]
+    query: "Số lượng sản phẩm khác nhau mà mỗi tiểu bang seller đã bán."
+
+  - id: "medium_35"
+    difficulty: "medium"
+    category: "join_filter"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE", "GROUP BY"]
+    query: "Số lượng đơn hàng theo từng tiểu bang khách hàng trong năm 2018."
+
+  - id: "medium_36"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 5 danh mục có trọng lượng sản phẩm trung bình nặng nhất."
+
+  - id: "medium_37"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "WHERE", "GROUP BY"]
+    query: "Số lượng đơn hàng bị hủy theo từng tháng."
+
+  - id: "medium_38"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 10 thành phố của khách hàng (customer_city) có tổng doanh thu (total_payment_value) cao nhất."
+
+  - id: "medium_39"
+    difficulty: "medium"
+    category: "join_filter"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "AVG", "WHERE"]
+    query: "Thời gian giao hàng trung bình của các đơn hàng đặt vào cuối tuần."
+
+  - id: "medium_40"
+    difficulty: "medium"
+    category: "join_aggregation"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 10 thành phố của seller có tổng doanh thu item_price cao nhất."
+
+  # ============================================================
+  # HARD (30 câu) - JOIN 3+ bảng, subquery, window function, CTE
+  # ============================================================
   - id: "hard_01"
     difficulty: "hard"
+    category: "multi_join_ratio"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "CASE WHEN", "SUM", "GROUP BY", "WHERE"]
     query: "Tỷ lệ đơn hàng giao trễ theo từng tiểu bang của khách hàng trong năm 2018."
 
   - id: "hard_02"
     difficulty: "hard"
+    category: "multi_join_filter"
+    tables_required: ["fact_order_item", "dim_product", "dim_customer"]
+    sql_concepts: ["JOIN", "WHERE", "SUM", "GROUP BY", "ORDER BY"]
     query: "Top 10 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất từ khách hàng ở thành phố sao paulo."
 
   - id: "hard_03"
     difficulty: "hard"
+    category: "having_filter"
+    tables_required: ["fact_order_item", "dim_seller"]
+    sql_concepts: ["JOIN", "AVG", "HAVING", "COUNT", "GROUP BY"]
     query: "Top 5 seller có thời gian giao hàng trung bình nhanh nhất, chỉ tính seller có ít nhất 50 item đã bán."
 
   - id: "hard_04"
     difficulty: "hard"
+    category: "conditional_ratio"
+    tables_required: ["fact_order"]
+    sql_concepts: ["CASE WHEN", "SUM", "COUNT", "division"]
     query: "Tỷ lệ đơn hàng thanh toán bằng credit_card và có tổng số kỳ trả góp từ 6 trở lên."
 
   - id: "hard_05"
     difficulty: "hard"
+    category: "multi_join_time"
+    tables_required: ["fact_order_item", "dim_product", "dim_date"]
+    sql_concepts: ["JOIN", "GROUP BY", "SUM", "COUNT", "WHERE"]
     query: "Doanh thu item và số lượng item theo từng quý cho danh mục sản phẩm cama_mesa_banho."
 
   - id: "hard_06"
     difficulty: "hard"
+    category: "subquery_max"
+    tables_required: ["fact_order_item", "dim_customer"]
+    sql_concepts: ["JOIN", "COUNT", "DISTINCT", "GROUP BY", "ORDER BY"]
     query: "Khách hàng mua nhiều sản phẩm khác nhau nhất là ai, họ ở thành phố và tiểu bang nào?"
 
   - id: "hard_07"
     difficulty: "hard"
+    category: "multi_aggregate"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "AVG", "GROUP BY"]
     query: "Theo từng năm, trung bình mỗi đơn hàng có bao nhiêu item và giá trị thanh toán trung bình là bao nhiêu?"
 
   - id: "hard_08"
     difficulty: "hard"
+    category: "conditional_max"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "GROUP BY", "ORDER BY", "CASE WHEN", "LIMIT"]
     query: "Tháng nào có tỷ lệ đơn hàng thanh toán bằng voucher cao nhất?"
 
   - id: "hard_09"
     difficulty: "hard"
+    category: "set_difference"
+    tables_required: ["dim_customer", "dim_seller"]
+    sql_concepts: ["JOIN", "COUNT", "ABS", "GROUP BY", "ORDER BY"]
     query: "Thành phố nào có chênh lệch tuyệt đối lớn nhất giữa số lượng khách hàng và số lượng seller?"
 
   - id: "hard_10"
     difficulty: "hard"
+    category: "multi_join_weekend"
+    tables_required: ["fact_order_item", "dim_product", "dim_date"]
+    sql_concepts: ["JOIN", "WHERE", "SUM", "GROUP BY", "ORDER BY"]
     query: "Trong các ngày cuối tuần, top 3 danh mục sản phẩm tiếng Anh có tổng doanh thu item cao nhất là gì?"
+
+  - id: "hard_11"
+    difficulty: "hard"
+    category: "cte_ranking"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "WITH", "SUM", "GROUP BY", "ORDER BY"]
+    query: "Tổng doanh thu theo từng tiểu bang trong năm 2018, tính cả phần trăm đóng góp của từng tiểu bang vào tổng toàn quốc."
+
+  - id: "hard_12"
+    difficulty: "hard"
+    category: "multi_join_cohort"
+    tables_required: ["fact_order_item", "dim_product", "dim_seller", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "COUNT", "GROUP BY", "WHERE"]
+    query: "Top 5 seller ở tiểu bang SP có doanh thu item_price cao nhất trong năm 2017."
+
+  - id: "hard_13"
+    difficulty: "hard"
+    category: "join_having"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "COUNT", "GROUP BY", "HAVING"]
+    query: "Liệt kê các khách hàng đặt từ 2 đơn hàng trở lên, kèm tổng giá trị thanh toán của họ."
+
+  - id: "hard_14"
+    difficulty: "hard"
+    category: "conditional_aggregation"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "CASE", "AVG", "GROUP BY"]
+    query: "So sánh thời gian giao hàng trung bình giữa đơn hàng cuối tuần và ngày thường theo từng tiểu bang khách hàng (Lưu ý: KHÔNG group by bằng alias, hãy copy nguyên cụm CASE hoặc dùng số thứ tự)."
+
+  - id: "hard_15"
+    difficulty: "hard"
+    category: "conditional_ratio"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "CASE", "SUM", "COUNT", "GROUP BY", "WHERE"]
+    query: "Tỷ lệ đơn hàng giao đúng hạn (không trễ) theo từng tháng trong năm 2018 (bắt buộc lọc d.year = 2018)."
+
+  - id: "hard_16"
+    difficulty: "hard"
+    category: "multi_join_seller_product"
+    tables_required: ["fact_order_item", "dim_seller", "dim_product"]
+    sql_concepts: ["JOIN", "COUNT", "DISTINCT", "GROUP BY", "ORDER BY"]
+    query: "Top 5 seller bán được nhiều danh mục sản phẩm khác nhau nhất."
+
+  - id: "hard_17"
+    difficulty: "hard"
+    category: "cte_growth"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["WITH", "JOIN", "SUM", "GROUP BY", "LAG"]
+    query: "Tăng trưởng doanh thu theo từng tháng (so với tháng trước) trong năm 2018."
+
+  - id: "hard_18"
+    difficulty: "hard"
+    category: "multi_join_cross"
+    tables_required: ["fact_order_item", "dim_product", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "COUNT", "GROUP BY", "WHERE"]
+    query: "Top 5 danh mục sản phẩm bán chạy nhất (theo số lượng) tại 3 thành phố lớn nhất (sao paulo, rio de janeiro, belo horizonte) trong năm 2018."
+
+  - id: "hard_19"
+    difficulty: "hard"
+    category: "ratio_comparison"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "SUM", "COUNT", "CASE WHEN", "GROUP BY"]
+    query: "Phần trăm doanh thu từ đơn hàng có phí ship chiếm hơn 20% tổng giá trị đơn."
+
+  - id: "hard_20"
+    difficulty: "hard"
+    category: "multi_join_pivot"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "CASE", "GROUP BY", "WHERE"]
+    query: "So sánh tổng doanh thu theo từng tiểu bang khách hàng (customer_state) giữa năm 2017 và 2018."
+
+  - id: "hard_21"
+    difficulty: "hard"
+    category: "having_condition"
+    tables_required: ["fact_order_item", "dim_product", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "CASE", "GROUP BY", "HAVING"]
+    query: "Các danh mục sản phẩm có tổng doanh thu trong năm 2018 cao hơn năm 2017 (dùng HAVING để lọc)."
+
+  - id: "hard_22"
+    difficulty: "hard"
+    category: "multi_join_retention"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "DISTINCT", "GROUP BY"]
+    query: "Số lượng khách hàng mới (lần đầu đặt hàng) theo từng tháng trong năm 2017."
+
+  - id: "hard_23"
+    difficulty: "hard"
+    category: "conditional_avg"
+    tables_required: ["fact_order_item", "dim_seller", "dim_date"]
+    sql_concepts: ["JOIN", "AVG", "CASE WHEN", "GROUP BY"]
+    query: "Thời gian giao hàng trung bình của từng tiểu bang seller, phân loại theo: nhanh (<7 ngày), trung bình (7-14 ngày), chậm (>14 ngày)."
+
+  - id: "hard_24"
+    difficulty: "hard"
+    category: "self_join_basket"
+    tables_required: ["fact_order_item", "dim_product"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY", "ORDER BY", "LIMIT", "WHERE"]
+    query: "Danh mục sản phẩm nào thường được mua kèm nhiều nhất với sản phẩm trong danh mục cama_mesa_banho? (Gợi ý: Tìm các order_key có chứa cama_mesa_banho, sau đó đếm các sản phẩm KHÁC nằm trong cùng order_key đó)."
+
+  - id: "hard_25"
+    difficulty: "hard"
+    category: "window_function"
+    tables_required: ["fact_order_item", "dim_seller", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "GROUP BY", "ROW_NUMBER() OVER", "WHERE"]
+    query: "Top 3 seller có doanh thu cao nhất trong mỗi quý của năm 2018 (dùng hàm ROW_NUMBER() OVER (PARTITION BY quarter ORDER BY doanh_thu DESC) để lấy top 3)."
+
+  - id: "hard_26"
+    difficulty: "hard"
+    category: "set_operation"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "EXCEPT", "WHERE"]
+    query: "Khách hàng nào đặt đơn trong năm 2017 nhưng không đặt thêm đơn nào trong năm 2018? (Dùng GROUP BY khách hàng và HAVING SUM(CASE WHEN year=2018 THEN 1 ELSE 0 END) = 0)."
+
+  - id: "hard_27"
+    difficulty: "hard"
+    category: "conditional_segment"
+    tables_required: ["fact_order", "dim_customer"]
+    sql_concepts: ["JOIN", "CASE WHEN", "COUNT", "SUM", "GROUP BY"]
+    query: "Phân khúc khách hàng theo tổng chi tiêu: dưới 100, 100-500, trên 500, kèm số lượng và tổng doanh thu mỗi phân khúc."
+
+  - id: "hard_28"
+    difficulty: "hard"
+    category: "multi_join_group"
+    tables_required: ["fact_order_item", "dim_product", "dim_customer", "fact_order"]
+    sql_concepts: ["JOIN", "COUNT", "GROUP BY", "ORDER BY", "LIMIT"]
+    query: "Top 5 cặp (thành phố khách hàng - danh mục sản phẩm) có số lượng item bán ra nhiều nhất (bắt buộc join qua bảng fact_order để kết nối customer và order_item)."
+
+  - id: "hard_29"
+    difficulty: "hard"
+    category: "ratio_time"
+    tables_required: ["fact_order", "dim_date"]
+    sql_concepts: ["JOIN", "SUM", "CASE WHEN", "GROUP BY", "ORDER BY"]
+    query: "Tỷ lệ phần trăm doanh thu từng phương thức thanh toán theo từng năm."
+
+  - id: "hard_30"
+    difficulty: "hard"
+    category: "multi_join_repeat"
+    tables_required: ["fact_order", "dim_customer", "dim_date"]
+    sql_concepts: ["JOIN", "COUNT", "AVG", "GROUP BY", "HAVING"]
+    query: "Tỷ lệ khách hàng mua hàng lặp lại (mua từ 2 đơn trở lên) theo từng tiểu bang."

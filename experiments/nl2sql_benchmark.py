@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import argparse
 import csv
 import logging
 import time
@@ -131,38 +130,87 @@ def run_single_query(question: dict) -> dict:
 
 
 def run_nl2sql_benchmark():
+    parser = argparse.ArgumentParser(description="Run NL2SQL Benchmark")
+    parser.add_argument("--resume", action="store_true", help="Tiếp tục chạy từ những câu chưa test")
+    args = parser.parse_args()
+
     if not check_backend():
         return False
 
-    questions = load_questions()
-    logger.info("\n🚀 Bắt đầu NL2SQL Benchmark với %d câu hỏi...\n", len(questions))
-
-    results = []
-    for i, q in enumerate(questions, 1):
-        logger.info("[%02d/%02d] [%s] %s", i, len(questions), q["difficulty"].upper(), q["query"][:60])
-        res = run_single_query(q)
-        status = "✅" if res["passed"] else "❌"
-        logger.info(
-            "         %s  %.2fs | rows=%s | reason=%s | self_heal=%s",
-            status, res["time_s"], res["row_count"], res["eval_reason"], res["self_healed"]
-        )
-        results.append(res)
-        time.sleep(0.5)
-
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
     csv_path = RESULTS_DIR / "nl2sql_benchmark.csv"
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=results[0].keys())
-        writer.writeheader()
-        writer.writerows(results)
 
-    print("\n" + "=" * 80)
-    print(" NL2SQL BENCHMARK — Summary ".center(80, "="))
-    print("=" * 80)
-    print(f"  {'Difficulty':<12} {'Total':>5} {'Passed':>7} {'Fail':>5} "
-          f"{'Pass Rate':>10} {'Threshold':>10} {'Status':>8} {'Avg Time':>10}")
-    print("  " + "-" * 82)
+    questions = load_questions()
+    
+    done_ids = set()
+    results = []
+    
+    if args.resume and csv_path.exists():
+        valid_results = {}
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                passed = (str(row["passed"]).lower() == "true")
+                row["passed"] = passed
+                row["time_s"] = float(row.get("time_s", 0))
+                # Ghi đè để giữ kết quả mới nhất nếu có duplicate
+                valid_results[row["id"]] = row
+        
+        # Chỉ skip những câu đã PASS
+        for k, v in valid_results.items():
+            if v["passed"]:
+                done_ids.add(k)
+                results.append(v)
+                
+        logger.info(f"🔄 Đã load {len(done_ids)} câu hỏi đã PASS từ lần chạy trước. Sẽ chạy lại các câu chưa chạy hoặc bị FAIL.")
+
+    questions_to_run = [q for q in questions if q["id"] not in done_ids]
+    
+    if not questions_to_run:
+        logger.info("✅ Đã hoàn thành toàn bộ 100 câu hỏi! Chuyển sang in Summary...")
+    else:
+        logger.info("\n🚀 Bắt đầu NL2SQL Benchmark với %d câu hỏi...\n", len(questions_to_run))
+
+    # Nếu resume, ta ghi đè file CSV bằng những câu đã PASS (xóa các dòng rác bị FAIL trước đó)
+    mode = "w" if args.resume else "w"
+    
+    with open(csv_path, mode, newline="", encoding="utf-8") as f:
+        writer = None
+        
+        # Ghi lại các câu đã PASS vào file CSV trước
+        if args.resume and results:
+            writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
+            writer.writeheader()
+            writer.writerows(results)
+        
+        for i, q in enumerate(questions_to_run, 1):
+            logger.info("[%02d/%02d] [%s] %s", i, len(questions_to_run), q["difficulty"].upper(), q["query"][:60])
+            res = run_single_query(q)
+            
+            if writer is None:
+                writer = csv.DictWriter(f, fieldnames=res.keys())
+                if mode == "w":
+                    writer.writeheader()
+                    
+            writer.writerow(res)
+            f.flush()
+            
+            status = "✅" if res["passed"] else "❌"
+            logger.info(
+                "         %s  %.2fs | rows=%s | reason=%s | self_heal=%s",
+                status, res["time_s"], res["row_count"], res["eval_reason"], res["self_healed"]
+            )
+            results.append(res)
+            time.sleep(0.5)
+
+    summary_lines = [
+        "#" * 80,
+        "# NL2SQL BENCHMARK — Summary",
+        "#" * 80,
+        f"| {'Difficulty':<12} | {'Total':>5} | {'Passed':>7} | {'Fail':>5} | "
+        f"{'Pass Rate':>10} | {'Threshold':>10} | {'Status':>8} | {'Avg Time':>10} |",
+        "|" + "-" * 14 + "|" + "-" * 7 + "|" + "-" * 9 + "|" + "-" * 7 + "|" + "-" * 12 + "|" + "-" * 12 + "|" + "-" * 10 + "|" + "-" * 12 + "|"
+    ]
 
     threshold_ok, threshold_rows = summarize_thresholds(results)
     by_diff_threshold = {row["difficulty"]: row for row in threshold_rows}
@@ -179,23 +227,31 @@ def run_nl2sql_benchmark():
         status = by_diff_threshold[diff]["status"]
         avg_time = sum(r["time_s"] for r in subset) / total
 
-        print(
-            f"  {diff.capitalize():<12} {total:>5} {passed:>7} {fail:>5} "
-            f"{pass_rate:>9.1f}% {threshold:>9.1f}% {status:>8} {avg_time:>9.2f}s"
+        summary_lines.append(
+            f"| {diff.capitalize():<12} | {total:>5} | {passed:>7} | {fail:>5} | "
+            f"{pass_rate:>9.1f}% | {threshold:>9.1f}% | {status:>8} | {avg_time:>9.2f}s |"
         )
 
     total_r = len(results)
     total_ok = sum(1 for r in results if r["passed"])
     total_time = sum(r["time_s"] for r in results) / total_r
     overall = by_diff_threshold["overall"]
-    print("  " + "-" * 82)
-    print(
-        f"  {'TOTAL':<12} {total_r:>5} {total_ok:>7} {total_r - total_ok:>5} "
-        f"{total_ok / total_r * 100:>9.1f}% {overall['threshold'] * 100:>9.1f}% "
-        f"{overall['status']:>8} {total_time:>9.2f}s"
+    summary_lines.append("|" + "-" * 14 + "|" + "-" * 7 + "|" + "-" * 9 + "|" + "-" * 7 + "|" + "-" * 12 + "|" + "-" * 12 + "|" + "-" * 10 + "|" + "-" * 12 + "|")
+    summary_lines.append(
+        f"| **{'TOTAL':<10}** | **{total_r:>3}** | **{total_ok:>5}** | **{total_r - total_ok:>3}** | "
+        f"**{total_ok / total_r * 100:>7.1f}%** | **{overall['threshold'] * 100:>7.1f}%** | "
+        f"**{overall['status']:>6}** | **{total_time:>7.2f}s** |"
     )
-    print("=" * 80)
+    
+    summary_text = "\n".join(summary_lines)
+    print("\n" + summary_text + "\n")
+    
+    summary_path = RESULTS_DIR / "nl2sql_benchmark_summary.md"
+    with open(summary_path, "w", encoding="utf-8") as f:
+        f.write(summary_text)
+
     logger.info("\n✅ NL2SQL benchmark saved → %s", csv_path)
+    logger.info("✅ Summary saved → %s", summary_path)
     return threshold_ok
 
 

@@ -1,2 +1,3 @@
-invalid type: string "SELECT\n    dp.product_category_name_english AS category,\n    SUM(foi.item_total_value) AS total_revenue,\n    COUNT(foi.order_item_key) AS total_items\nFROM iceberg.gold.fact_order_item foi\nJOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key\nJOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key\nWHERE d.is_weekend = TRUE\nLECT\n
-ÿÿÿÿÿÿÿÿÿÿÿÿ
+invalid type: string "SELECT\n    order_status,\n    COUNT(order_key) AS total_orders,\n    ROUND(COUNT(order_key) * 100.0 / SUM(COUNT(order_key)) OVER (), 2) AS percentage\nFROM iceberg.gold.fact_order\nGROUP BY order_status\nORDER BY total_orders DESC", expected i64foi.purchase_date_key = d.date_key
+GROUP BY d.year, d.month, dp.product_category_name_english
+ORDER BY d.year, d.month, total_revenu
