@@ -4,7 +4,8 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
+from kafka.admin import KafkaAdminClient, NewTopic
+from kafka.errors import KafkaError, TopicAlreadyExistsError
 from . import config
 
 PRODUCTS = config.PRODUCTS
@@ -313,6 +314,28 @@ def preview_events(count: int = 2) -> None:
 
 # ── Producer ──────────────────────────────────────────────────────────────────
 
+def ensure_topic() -> None:
+    """Create the topic with KAFKA_NUM_PARTITIONS before producing.
+
+    Relying on auto-create would give the topic a single partition, which
+    caps Spark's read parallelism at 1 and defeats the point of partitioning.
+    """
+    admin = KafkaAdminClient(bootstrap_servers=config.KAFKA_BOOTSTRAP_SERVERS)
+    try:
+        admin.create_topics([
+            NewTopic(
+                name=config.KAFKA_TOPIC,
+                num_partitions=config.KAFKA_NUM_PARTITIONS,
+                replication_factor=1,
+            )
+        ])
+        print(f"Created topic '{config.KAFKA_TOPIC}' with {config.KAFKA_NUM_PARTITIONS} partitions.")
+    except TopicAlreadyExistsError:
+        print(f"Topic '{config.KAFKA_TOPIC}' already exists, skipping creation.")
+    finally:
+        admin.close()
+
+
 def _throttle_delay_seconds() -> float:
     if config.PRODUCE_DELAY_MS > 0:
         base = config.PRODUCE_DELAY_MS / 1000.0
@@ -322,6 +345,8 @@ def _throttle_delay_seconds() -> float:
 
 
 def produce_events() -> None:
+    ensure_topic()
+
     producer = KafkaProducer(
         bootstrap_servers=config.KAFKA_BOOTSTRAP_SERVERS,
         value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode("utf-8"),

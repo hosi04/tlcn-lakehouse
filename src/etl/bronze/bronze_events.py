@@ -22,6 +22,8 @@ from pyspark.sql.types import (
 from src.etl.bronze.bronze_assets import create_bucket_if_not_exists
 from src.etl.utils import get_spark_session
 
+load_dotenv()
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -34,8 +36,11 @@ CHECKPOINT_LOCATION = os.getenv(
     "KAFKA_CHECKPOINT_LOCATION",
     "s3a://lakehouse/checkpoints/bronze-olist-events",
 )
-TRIGGER_INTERVAL = os.getenv("KAFKA_STREAM_TRIGGER", "30 seconds")
+TRIGGER_INTERVAL = os.getenv("KAFKA_STREAM_TRIGGER", "2 minutes")
 MAX_OFFSETS_PER_TRIGGER = os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "5000")
+# Toggle for the fragmentation benchmark: set to "false" to reproduce the
+# pre-fix baseline (one small file per Kafka partition per micro-batch).
+COALESCE_OUTPUT = os.getenv("KAFKA_COALESCE_OUTPUT", "true").lower() == "true"
 
 FULL_TABLE_NAME = f"{BRONZE_NAMESPACE}.{BRONZE_TABLE}"
 
@@ -100,6 +105,12 @@ def _write_micro_batch(spark: SparkSession, bronze_df: DataFrame, epoch_id: int,
         logger.debug("Epoch %s: no new Kafka messages", epoch_id)
         return
 
+    # Collapse the per-Kafka-partition Spark partitions into a single output
+    # file per micro-batch commit — without this, each epoch writes one small
+    # Parquet file per Kafka partition instead of one right-sized file.
+    if COALESCE_OUTPUT:
+        bronze_df = bronze_df.coalesce(1)
+
     row_count = bronze_df.count()
     if not table_ready[0]:
         bronze_df.write.format("iceberg").mode("overwrite").saveAsTable(FULL_TABLE_NAME)
@@ -148,7 +159,6 @@ def start_kafka_stream(spark: SparkSession):
 
 
 def main() -> None:
-    load_dotenv()
     create_bucket_if_not_exists("lakehouse")
 
     spark = get_spark_session("Bronze Kafka Stream")
