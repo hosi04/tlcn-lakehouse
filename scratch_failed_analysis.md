@@ -5,41 +5,16 @@
 - **Reason**: row_count_below_min
 - **Error**: 
 ```sql
-SELECT
+SELECT 
     dp.product_category_name_english AS category,
     SUM(foi.item_total_value) AS total_revenue,
-    COUNT(foi.order_item_key) AS total_items
+    COUNT(foi.order_item_key) AS total_products_sold
 FROM iceberg.gold.fact_order_item foi
 JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
 JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
 WHERE dp.product_category_name_english = 'cama_mesa_banho'
-  AND d.quarter IN (1, 2, 3) -- Quarters are 1-4 in Trino
 GROUP BY dp.product_category_name_english, d.quarter
 ORDER BY d.quarter, total_revenue DESC
-```
-
-### hard_13 (hard)
-- **Query**: Liệt kê các khách hàng đặt từ 2 đơn hàng trở lên, kèm tổng giá trị thanh toán của họ.
-- **Reason**: row_count_below_min
-- **Error**: 
-```sql
-WITH customer_order_counts AS (
-    SELECT
-        dc.customer_key,
-        COUNT(fo.order_key) AS total_orders_per_customer
-    FROM iceberg.gold.fact_order fo
-    JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
-    GROUP BY dc.customer_key
-)
-SELECT 
-    dc.customer_id,
-    SUM(fo.total_payment_value) AS total_revenue
-FROM customer_order_counts co
-JOIN iceberg.gold.fact_order fo ON co.customer_key = fo.customer_key
-JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
-WHERE co.total_orders_per_customer >= 2
-GROUP BY dc.customer_id, dc.customer_id -- Corrected to use the correct column name
-ORDER BY total_revenue DESC
 ```
 
 ### hard_14 (hard)
@@ -52,8 +27,8 @@ SELECT
     AVG(fo.delivery_actual_days) AS avg_delivery_time
 FROM iceberg.gold.fact_order fo
 JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
-GROUP BY 1
-ORDER BY avg_delivery_time DESC
+GROUP BY d.is_weekend
+ORDER BY avg_delivery_time ASC
 ```
 
 ### hard_21 (hard)
@@ -63,8 +38,10 @@ ORDER BY avg_delivery_time DESC
 ```sql
 SELECT 
     dp.product_category_name_english AS category,
-    SUM(foi.item_total_value) AS total_revenue_2018,
-    SUM(CASE WHEN d.year = 2017 THEN foi.item_total_value ELSE 0 END) AS total_revenue_2017
+    SUM(CASE WHEN d.year = 2018 THEN foi.item_total_value ELSE 0 END) AS revenue_2018,
+    SUM(CASE WHEN d.year = 2017 THEN foi.item_total_value ELSE 0 END) AS revenue_2017,
+    (SUM(CASE WHEN d.year = 2018 THEN foi.item_total_value ELSE 0 END) - SUM(CASE WHEN d.year = 2017 THEN foi.item_total_value ELSE 0 END))
+    / NULLIF(SUM(CASE WHEN d.year = 2017 THEN foi.item_total_value ELSE 0 END), 0) * 100.0 AS growth_rate_pct
 FROM 
     iceberg.gold.fact_order_item foi
 JOIN 
@@ -72,13 +49,13 @@ JOIN
 JOIN 
     iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
 WHERE 
-    d.year IN (2018, 2017)
+    d.year IN (2017, 2018)
 GROUP BY 
     dp.product_category_name_english
 HAVING 
-    total_revenue_2018 > total_revenue_2017
+    revenue_2018 > revenue_2017
 ORDER BY 
-    total_revenue_2018 DESC
+    growth_rate_pct DESC
 ```
 
 ### hard_23 (hard)
@@ -113,13 +90,20 @@ ORDER BY
 ```sql
 SELECT 
     dp.product_category_name_english AS category,
-    COUNT(foi.order_item_key) AS total_items_sold
-FROM iceberg.gold.fact_order_item foi
-JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
-WHERE dp.product_category_name_english = 'cama_mesa_banho'
-GROUP BY dp.product_category_name_english
-ORDER BY total_items_sold DESC
-LIMIT 1
+    COUNT(DISTINCT foi2.order_item_key) AS total_items_with_cama_mesa_banho
+FROM 
+    iceberg.gold.fact_order_item foi1
+JOIN 
+    iceberg.gold.dim_product dp ON foi1.product_key = dp.product_key
+JOIN 
+    iceberg.gold.fact_order_item foi2 ON foi1.customer_key = foi2.customer_key AND foi1.order_id = foi2.order_id
+WHERE 
+    dp.product_category_name_english = 'cama_mesa_banho'
+GROUP BY 
+    dp.product_category_name_english
+ORDER BY 
+    total_items_with_cama_mesa_banho DESC
+LIMIT 3
 ```
 
 ### hard_25 (hard)
@@ -133,26 +117,22 @@ WITH quarterly_revenue AS (
         ds.seller_city,
         ds.seller_state,
         SUM(foi.item_total_value) AS total_revenue,
-        DATE_TRUNC('quarter', d.date_key) AS quarter_start_date
+        d.quarter,
+        ROW_NUMBER() OVER (PARTITION BY d.quarter ORDER BY total_revenue DESC) AS rank
     FROM iceberg.gold.fact_order_item foi
     JOIN iceberg.gold.dim_seller ds ON foi.seller_key = ds.seller_key
     JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
     WHERE d.year = 2018 AND foi.order_status = 'delivered'
-    GROUP BY ds.seller_id, ds.seller_city, ds.seller_state, quarter_start_date
+    GROUP BY ds.seller_id, ds.seller_city, ds.seller_state, d.quarter
 )
 SELECT
     seller_id,
     seller_city,
     seller_state,
     total_revenue,
-    quarter_start_date
-FROM (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY quarter_start_date ORDER BY total_revenue DESC) AS rn
-    FROM quarterly_revenue
-) ranked_sellers
-WHERE rn <= 3
+    quarter
+FROM quarterly_revenue
+WHERE rank <= 3
 ```
 
 ### hard_27 (hard)
@@ -171,53 +151,5 @@ SELECT
 FROM iceberg.gold.fact_order fo
 GROUP BY customer_segment
 ORDER BY customer_segment
-```
-
-### hard_28 (hard)
-- **Query**: Top 5 cặp (thành phố khách hàng - danh mục sản phẩm) có số lượng item bán ra nhiều nhất (bắt buộc join qua bảng fact_order để kết nối customer và order_item).
-- **Reason**: missing_expected_table
-- **Error**: 
-```sql
-SELECT 
-    dc.customer_city AS city,
-    dp.product_category_name_english AS category,
-    COUNT(foi.order_item_key) AS total_items_sold
-FROM 
-    iceberg.gold.fact_order fo
-JOIN 
-    iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
-JOIN 
-    iceberg.gold.fact_order_item foi ON fo.order_id = foi.order_id
-JOIN 
-    iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
-GROUP BY 
-    dc.customer_city, dp.product_category_name_english
-ORDER BY 
-    total_items_sold DESC
-LIMIT 5
-```
-
-### hard_30 (hard)
-- **Query**: Tỷ lệ khách hàng mua hàng lặp lại (mua từ 2 đơn trở lên) theo từng tiểu bang.
-- **Reason**: missing_expected_table
-- **Error**: 
-```sql
-WITH customer_order_counts AS (
-    SELECT
-        dc.customer_state,
-        dc.customer_unique_id,
-        COUNT(fo.order_key) AS total_orders_per_customer
-    FROM iceberg.gold.fact_order fo
-    JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
-    GROUP BY dc.customer_state, dc.customer_unique_id
-)
-SELECT
-    customer_state,
-    COUNT(customer_unique_id) AS total_customers,
-    SUM(CASE WHEN total_orders_per_customer >= 2 THEN 1 ELSE 0 END) AS repeat_customers,
-    ROUND(SUM(CASE WHEN total_orders_per_customer >= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(customer_unique_id), 2) AS repeat_rate_pct
-FROM customer_order_counts
-GROUP BY customer_state
-ORDER BY repeat_rate_pct DESC
 ```
 

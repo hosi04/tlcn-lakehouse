@@ -941,6 +941,31 @@ GROUP BY
 ORDER BY 
     total_items_sold DESC
 LIMIT 5",5,iceberg.gold.fact_order_item|iceberg.gold.dim_product|iceberg.gold.dim_customer|iceberg.gold.fact_order,34,False,False,1.0,1.0,1.0,passed,28.96,
+hard_13,hard,"Liệt kê các khách hàng đặt từ 2 đơn hàng trở lên, kèm tổng giá trị thanh toán của họ.",True,True,True,"SELECT 
+    dc.customer_unique_id,
+    SUM(fo.total_payment_value) AS total_spent
+FROM iceberg.gold.fact_order fo
+JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+GROUP BY dc.customer_unique_id
+HAVING COUNT(fo.order_key) >= 2
+ORDER BY total_spent DESC",1000,iceberg.gold.dim_customer|iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_date,35,False,False,1.0,1.0,1.0,passed,24.89,
+hard_30,hard,Tỷ lệ khách hàng mua hàng lặp lại (mua từ 2 đơn trở lên) theo từng tiểu bang.,True,True,True,"WITH customer_order_counts AS (
+    SELECT
+        dc.customer_state,
+        dc.customer_unique_id,
+        COUNT(fo.order_key) AS total_orders_per_customer
+    FROM iceberg.gold.fact_order fo
+    JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
+    GROUP BY dc.customer_state, dc.customer_unique_id
+)
+SELECT
+    customer_state,
+    COUNT(customer_unique_id) AS total_customers,
+    SUM(CASE WHEN total_orders_per_customer >= 2 THEN 1 ELSE 0 END) AS repeat_customers,
+    ROUND(SUM(CASE WHEN total_orders_per_customer >= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(customer_unique_id), 2) AS repeat_rate_pct
+FROM customer_order_counts
+GROUP BY customer_state
+ORDER BY repeat_rate_pct DESC",27,iceberg.gold.dim_customer|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,39,False,False,1.0,1.0,1.0,passed,23.5,
 hard_05,hard,Doanh thu item và số lượng item theo từng quý cho danh mục sản phẩm cama_mesa_banho.,True,False,True,"SELECT 
     dp.product_category_name_english AS category,
     SUM(foi.item_total_value) AS total_revenue,
@@ -950,22 +975,14 @@ JOIN iceberg.gold.dim_product dp ON foi.product_key = dp.product_key
 JOIN iceberg.gold.dim_date d ON foi.purchase_date_key = d.date_key
 WHERE dp.product_category_name_english = 'cama_mesa_banho'
 GROUP BY dp.product_category_name_english, d.quarter
-ORDER BY d.quarter, total_revenue DESC",0,iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,29,False,False,1.0,1.0,1.0,row_count_below_min,19.38,
-hard_13,hard,"Liệt kê các khách hàng đặt từ 2 đơn hàng trở lên, kèm tổng giá trị thanh toán của họ.",True,True,True,"SELECT 
-    dc.customer_unique_id,
-    SUM(fo.total_payment_value) AS total_spent
-FROM iceberg.gold.fact_order fo
-JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
-GROUP BY dc.customer_unique_id
-HAVING COUNT(fo.order_key) >= 2
-ORDER BY total_spent DESC",1000,iceberg.gold.dim_customer|iceberg.gold.fact_order|iceberg.gold.fact_order_item|iceberg.gold.dim_date,35,False,False,1.0,1.0,1.0,passed,24.89,
+ORDER BY d.quarter, total_revenue DESC",0,iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,29,False,False,1.0,1.0,1.0,row_count_below_min,17.61,
 hard_14,hard,"So sánh thời gian giao hàng trung bình giữa đơn hàng cuối tuần và ngày thường theo từng tiểu bang khách hàng (Lưu ý: KHÔNG group by bằng alias, hãy copy nguyên cụm CASE hoặc dùng số thứ tự).",True,False,True,"SELECT 
     CASE WHEN d.is_weekend = TRUE THEN 'Cuối tuần' ELSE 'Ngày thường' END AS day_type,
     AVG(fo.delivery_actual_days) AS avg_delivery_time
 FROM iceberg.gold.fact_order fo
 JOIN iceberg.gold.dim_date d ON fo.purchase_date_key = d.date_key
 GROUP BY d.is_weekend
-ORDER BY avg_delivery_time ASC",2,iceberg.gold.dim_date|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,36,False,False,0.667,0.8,1.0,missing_expected_table,24.04,
+ORDER BY avg_delivery_time ASC",2,iceberg.gold.dim_date|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,36,False,False,0.667,0.8,1.0,missing_expected_table,21.6,
 hard_21,hard,Các danh mục sản phẩm có tổng doanh thu trong năm 2018 cao hơn năm 2017 (dùng HAVING để lọc).,True,False,True,"SELECT 
     dp.product_category_name_english AS category,
     SUM(CASE WHEN d.year = 2018 THEN foi.item_total_value ELSE 0 END) AS revenue_2018,
@@ -985,7 +1002,7 @@ GROUP BY
 HAVING 
     revenue_2018 > revenue_2017
 ORDER BY 
-    growth_rate_pct DESC",0,iceberg.gold.dim_product|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.fact_order_item,0,True,True,1.0,1.0,1.0,row_count_below_min,53.9,
+    growth_rate_pct DESC",0,iceberg.gold.dim_product|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.fact_order_item,0,True,True,1.0,1.0,1.0,row_count_below_min,48.01,
 hard_23,hard,"Thời gian giao hàng trung bình của từng tiểu bang seller, phân loại theo: nhanh (<7 ngày), trung bình (7-14 ngày), chậm (>14 ngày).",True,False,True,"SELECT 
     ds.seller_state,
     CASE 
@@ -1003,7 +1020,7 @@ WHERE
 GROUP BY 
     ds.seller_state, shipping_classification
 ORDER BY 
-    avg_shipping_days ASC",0,iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.dim_customer,44,True,True,0.667,1.0,1.0,row_count_below_min,20.11,
+    avg_shipping_days ASC",0,iceberg.gold.fact_order_item|iceberg.gold.dim_date|iceberg.gold.fact_order|iceberg.gold.dim_customer,44,True,True,0.667,1.0,1.0,row_count_below_min,18.34,
 hard_24,hard,"Danh mục sản phẩm nào thường được mua kèm nhiều nhất với sản phẩm trong danh mục cama_mesa_banho? (Gợi ý: Tìm các order_key có chứa cama_mesa_banho, sau đó đếm các sản phẩm KHÁC nằm trong cùng order_key đó).",True,False,True,"SELECT 
     dp.product_category_name_english AS category,
     COUNT(DISTINCT foi2.order_item_key) AS total_items_with_cama_mesa_banho
@@ -1019,7 +1036,7 @@ GROUP BY
     dp.product_category_name_english
 ORDER BY 
     total_items_with_cama_mesa_banho DESC
-LIMIT 3",0,iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.dim_seller|iceberg.gold.fact_order,0,False,False,1.0,1.0,1.0,row_count_below_min,36.55,
+LIMIT 3",0,iceberg.gold.dim_product|iceberg.gold.fact_order_item|iceberg.gold.dim_seller|iceberg.gold.fact_order,0,False,False,1.0,1.0,1.0,row_count_below_min,32.89,
 hard_25,hard,Top 3 seller có doanh thu cao nhất trong mỗi quý của năm 2018 (dùng hàm ROW_NUMBER() OVER (PARTITION BY quarter ORDER BY doanh_thu DESC) để lấy top 3).,True,False,True,"WITH quarterly_revenue AS (
     SELECT
         ds.seller_id,
@@ -1041,7 +1058,7 @@ SELECT
     total_revenue,
     quarter
 FROM quarterly_revenue
-WHERE rank <= 3",0,iceberg.gold.dim_date|iceberg.gold.fact_order_item|iceberg.gold.dim_seller|iceberg.gold.fact_order,33,True,True,1.0,1.0,1.0,row_count_below_min,26.43,
+WHERE rank <= 3",0,iceberg.gold.dim_date|iceberg.gold.fact_order_item|iceberg.gold.dim_seller|iceberg.gold.fact_order,33,True,True,1.0,1.0,1.0,row_count_below_min,23.61,
 hard_27,hard,"Phân khúc khách hàng theo tổng chi tiêu: dưới 100, 100-500, trên 500, kèm số lượng và tổng doanh thu mỗi phân khúc.",True,False,True,"SELECT 
     CASE 
         WHEN fo.total_payment_value < 100 THEN 'Under 100'
@@ -1052,21 +1069,4 @@ hard_27,hard,"Phân khúc khách hàng theo tổng chi tiêu: dưới 100, 100-5
     SUM(fo.total_payment_value) AS total_revenue
 FROM iceberg.gold.fact_order fo
 GROUP BY customer_segment
-ORDER BY customer_segment",0,iceberg.gold.dim_customer|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,20,True,True,0.5,0.8,1.0,row_count_below_min,32.12,
-hard_30,hard,Tỷ lệ khách hàng mua hàng lặp lại (mua từ 2 đơn trở lên) theo từng tiểu bang.,True,True,True,"WITH customer_order_counts AS (
-    SELECT
-        dc.customer_state,
-        dc.customer_unique_id,
-        COUNT(fo.order_key) AS total_orders_per_customer
-    FROM iceberg.gold.fact_order fo
-    JOIN iceberg.gold.dim_customer dc ON fo.customer_key = dc.customer_key
-    GROUP BY dc.customer_state, dc.customer_unique_id
-)
-SELECT
-    customer_state,
-    COUNT(customer_unique_id) AS total_customers,
-    SUM(CASE WHEN total_orders_per_customer >= 2 THEN 1 ELSE 0 END) AS repeat_customers,
-    ROUND(SUM(CASE WHEN total_orders_per_customer >= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(customer_unique_id), 2) AS repeat_rate_pct
-FROM customer_order_counts
-GROUP BY customer_state
-ORDER BY repeat_rate_pct DESC",27,iceberg.gold.dim_customer|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,39,False,False,1.0,1.0,1.0,passed,23.5,
+ORDER BY customer_segment",0,iceberg.gold.dim_customer|iceberg.gold.fact_order_item|iceberg.gold.fact_order|iceberg.gold.dim_product,20,True,True,0.5,0.8,1.0,row_count_below_min,27.93,

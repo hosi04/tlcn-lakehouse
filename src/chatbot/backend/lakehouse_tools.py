@@ -28,7 +28,7 @@ def _get_trino_conn():
     return connect(
         host=os.getenv("TRINO_HOST", "localhost"),
         port=int(os.getenv("TRINO_PORT", "8085")),
-        user=os.getenv("TRINO_USER", "admin"),
+        user=os.getenv("TRINO_USER", "chatbot_user"),
         catalog=os.getenv("TRINO_CATALOG", "iceberg"),
         schema=os.getenv("TRINO_SCHEMA", "gold"),
     )
