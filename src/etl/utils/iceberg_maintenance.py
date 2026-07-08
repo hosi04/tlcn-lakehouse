@@ -35,11 +35,16 @@ BATCH_TABLES = [
 
 SMALL_FILE_THRESHOLD_BYTES = int(os.getenv("SMALL_FILE_THRESHOLD_BYTES", 10 * 1024 * 1024))  # 10 MB
 SMALL_FILE_COUNT_TRIGGER = int(os.getenv("SMALL_FILE_COUNT_TRIGGER", 20))
+# Lower bound Trino will allow EXPIRE_SNAPSHOTS to use; must be <= the
+# shortest retention passed to _expire_snapshots (streaming uses 1h).
+SNAPSHOT_RETENTION = os.getenv("STREAMING_SNAPSHOT_RETENTION", "1h")
 
 
 def _count_small_files(cur, table: str) -> int:
+    catalog_schema, name = table.rsplit(".", 1)
     cur.execute(
-        f'SELECT COUNT(*) FROM "{table}$files" WHERE file_size_in_bytes < {SMALL_FILE_THRESHOLD_BYTES}'
+        f'SELECT COUNT(*) FROM {catalog_schema}."{name}$files" '
+        f'WHERE file_size_in_bytes < {SMALL_FILE_THRESHOLD_BYTES}'
     )
     return cur.fetchone()[0]
 
@@ -101,6 +106,11 @@ def _connect():
         port=TRINO_PORT,
         user=TRINO_USER,
         http_scheme="http",
+        # Streaming tables commit very frequently, so we intentionally allow
+        # expiring snapshots far younger than the 7-day catalog default —
+        # otherwise a week of small-file snapshots would pile up before the
+        # first vacuum could reclaim them.
+        session_properties={"iceberg.expire_snapshots_min_retention": SNAPSHOT_RETENTION},
     )
 
 
