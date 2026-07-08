@@ -13,17 +13,17 @@ default_args = {
 }
 
 with DAG(
-    dag_id="iceberg_batch_table_maintenance",
+    dag_id="iceberg_streaming_table_maintenance",
     default_args=default_args,
-    schedule="@weekly",
+    schedule="*/20 * * * *",
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    tags=["iceberg", "maintenance", "lakehouse"],
+    tags=["iceberg", "maintenance", "streaming", "lakehouse"],
 ) as dag:
 
     compaction_and_vacuum = BashOperator(
         task_id="compaction_and_vacuum",
-        bash_command=f"cd {PROJECT_DIR} && python -m src.etl.utils.iceberg_maintenance batch",
+        bash_command=f"cd {PROJECT_DIR} && python -m src.etl.utils.iceberg_maintenance streaming",
     )
 
     compaction_and_vacuum

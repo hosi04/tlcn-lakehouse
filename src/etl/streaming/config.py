@@ -1,7 +1,12 @@
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "olist-events")
+KAFKA_NUM_PARTITIONS = int(os.getenv("KAFKA_NUM_PARTITIONS", "4"))
 TOTAL_EVENTS = int(os.getenv("TOTAL_EVENTS", "100000"))
 
 EVENTS_PER_SECOND = float(os.getenv("EVENTS_PER_SECOND", "10"))

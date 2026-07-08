@@ -1,0 +1,42 @@
+Trino version: 478
+Queued: 156.90us, Analysis: 13.67ms, Planning: 35.84ms, Execution: 211.06ms
+Fragment 1 [SINGLE]
+    CPU: 2.83ms, Scheduled: 5.71ms, Blocked 1.01s (Input: 951.24ms, Output: 0.00ns), Input: 1 row (9B); per task: avg.: 1.00 std.dev.: 0.00, Output: 1 row (9B)
+    Peak Memory: 976B, Tasks count: 1; per task: max: 976B
+    Output layout: [count]
+    Output partitioning: SINGLE []
+    Aggregate[type = FINAL]
+    │   Layout: [count:bigint]
+    │   Estimates: {rows: 1 (9B), cpu: 219.73k, memory: 9B, network: 0B}
+    │   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (9B)
+    │   Input avg.: 1.00 rows, Input std.dev.: 0.00%
+    │   count := count(count_0)
+    └─ LocalExchange[partitioning = SINGLE]
+       │   Layout: [count_0:bigint]
+       │   Estimates: {rows: 25000 (219.73kB), cpu: 0, memory: 0B, network: 0B}
+       │   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 60.00ms (5.93%), Output: 1 row (9B)
+       │   Input avg.: 0.06 rows, Input std.dev.: 387.30%
+       └─ RemoteSource[sourceFragmentIds = [2]]
+              Layout: [count_0:bigint]
+              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 951.00ms (94.07%), Output: 1 row (9B)
+              Input avg.: 0.06 rows, Input std.dev.: 387.30%
+
+Fragment 2 [SOURCE]
+    CPU: 32.93ms, Scheduled: 36.77ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 50000 rows (1017.24kB); per task: avg.: 50000.00 std.dev.: 0.00, Output: 1 row (9B)
+    Peak Memory: 104B, Tasks count: 1; per task: max: 104B
+    Output layout: [count_0]
+    Output partitioning: SINGLE []
+    Aggregate[type = PARTIAL]
+    │   Layout: [count_0:bigint]
+    │   Estimates: {rows: 25000 (219.73kB), cpu: ?, memory: ?, network: ?}
+    │   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (9B)
+    │   Input avg.: 2069.00 rows, Input std.dev.: 0.00%
+    │   count_0 := count(*)
+    └─ ScanFilterProject[table = iceberg:bronze.olist_events$data@7594072647890463861, filterPredicate = (event_type = varchar 'purchase')]
+           Layout: []
+           Estimates: {rows: 50000 (0B), cpu: 273.30k, memory: 0B, network: 0B}/{rows: 25000 (0B), cpu: 273.30k, memory: 0B, network: 0B}/{rows: 25000 (0B), cpu: 0, memory: 0B, network: 0B}
+           CPU: 32.00ms (100.00%), Scheduled: 36.00ms (100.00%), Blocked: 0.00ns (0.00%), Output: 2069 rows (0B)
+           Input avg.: 50000.00 rows, Input std.dev.: 0.00%
+           event_type := 2:event_type:varchar
+           Input: 50000 rows (1017.24kB), Filtered: 95.86%, Physical input: 58.90kB, Physical input time: 160.81us, Splits: 1, Splits generation wait time: 13.46ms
+
