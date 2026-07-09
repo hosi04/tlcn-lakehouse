@@ -69,6 +69,24 @@ def analyst_agent(state: AgentState) -> AgentState:
     log = log + ["[analyst_agent] ▶ START"]
 
     if sql_error or not rows:
+        if sql_error:
+            import os
+            import csv
+            from datetime import datetime
+            
+            log_file = "logs/failed_queries.csv"
+            os.makedirs("logs", exist_ok=True)
+            file_exists = os.path.isfile(log_file)
+            
+            try:
+                with open(log_file, mode='a', encoding='utf-8', newline='') as f:
+                    writer = csv.writer(f)
+                    if not file_exists:
+                        writer.writerow(['timestamp', 'question', 'failed_sql', 'error_message'])
+                    writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), question, sql, sql_error])
+            except Exception as e:
+                log = log + [f"[analyst_agent] Failed to write log: {e}"]
+
         analysis = (
             "❌ Không thể phân tích vì truy vấn SQL thất bại hoặc không có dữ liệu trả về."
             if sql_error
