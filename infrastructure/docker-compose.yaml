@@ -302,6 +302,7 @@ services:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       HIVE_METASTORE_URI: thrift://hive-metastore:9083
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     ports:
       - "8082:8080"
     volumes:
@@ -347,6 +348,7 @@ services:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       HIVE_METASTORE_URI: thrift://hive-metastore:9083
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     volumes:
       - ../airflow/dags:/opt/airflow/dags
       - ../:/opt/project
@@ -400,6 +402,7 @@ services:
       AWS_SECRET_ACCESS_KEY: minio123
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       MLFLOW_S3_IGNORE_TLS: "true"
+      MLFLOW_SERVER_ALLOWED_HOSTS: "*"
     ports:
       - "5000:5000"
     networks:

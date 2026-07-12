@@ -6,7 +6,8 @@ RUN apt-get update && \
   apt-get install -y \
   curl \
   wget \
-  openjdk-17-jre-headless && \
+  openjdk-17-jre-headless \
+  libgomp1 && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 

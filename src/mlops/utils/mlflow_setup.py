@@ -2,8 +2,17 @@ import os
 import logging
 import random
 import numpy as np
-import torch
 import mlflow
+import boto3
+from botocore.exceptions import ClientError
+from dotenv import load_dotenv
+
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
@@ -17,12 +26,13 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 def set_seed(seed: int = 42):
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    if HAS_TORCH:
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
     log.info(f"[Seed] Đã thiết lập Global Random Seed = {seed}")
 
 

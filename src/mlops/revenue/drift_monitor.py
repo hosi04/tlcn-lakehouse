@@ -12,12 +12,18 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_psi(expected: pd.Series, actual: pd.Series, num_buckets: int = 10) -> float:
+    expected = expected.dropna()
+    actual = actual.dropna()
+    
+    if len(expected) == 0 or len(actual) == 0:
+        return 0.0
+
     breakpoints = np.percentile(expected, np.linspace(0, 100, num_buckets + 1))
     breakpoints[0] -= 1e-5
     breakpoints[-1] += 1e-5
 
-    expected_counts = pd.cut(expected, bins=breakpoints).value_counts(sort=False)
-    actual_counts = pd.cut(actual, bins=breakpoints).value_counts(sort=False)
+    expected_counts = pd.cut(expected, bins=breakpoints, duplicates='drop').value_counts(sort=False)
+    actual_counts = pd.cut(actual, bins=breakpoints, duplicates='drop').value_counts(sort=False)
 
     expected_pct = expected_counts / len(expected)
     actual_pct = actual_counts / len(actual)
@@ -40,12 +46,12 @@ def check_revenue_drift():
         logger.warning("Không đủ dữ liệu để tính toán Drift.")
         return False
 
-    split = int(len(df) * TRAIN_RATIO)
-    base_data = df[TARGET_COL][:split]
-    recent_data = df[TARGET_COL][split:]
+    # Đánh giá drift trên dữ liệu của tháng gần nhất (4 tuần)
+    recent_data = df[TARGET_COL][-4:]
+    base_data = df[TARGET_COL][:-4]
 
-    logger.info("➜ Dữ liệu cơ sở (Baseline - Training): %d tuần", len(base_data))
-    logger.info("➜ Dữ liệu gần đây (Recent - Inference): %d tuần", len(recent_data))
+    logger.info("➜ Dữ liệu cơ sở (Baseline - Lịch sử): %d tuần", len(base_data))
+    logger.info("➜ Dữ liệu gần đây (Recent - 1 Tháng qua): %d tuần", len(recent_data))
 
     mean_base = base_data.mean()
     std_base = base_data.std()
@@ -60,6 +66,8 @@ def check_revenue_drift():
     psi_score = calculate_psi(base_data, recent_data, num_buckets=5)
     logger.info("\n2. ĐÁNH GIÁ PSI (Population Stability Index):")
     logger.info("   ➜ PSI Score = %.4f", psi_score)
+    logger.info("   (Lưu ý: PSI cao trên dữ liệu e-commerce tăng trưởng phản ánh Business Growth Drift,")
+    logger.info("    không nhất thiết là Model Degradation. Kết hợp với Z-Score để ra quyết định.)")
 
     logger.info("\n--- KẾT LUẬN & ĐÁNH GIÁ MLOPS ---")
     drift_detected = False
@@ -72,7 +80,8 @@ def check_revenue_drift():
         logger.info("✅ ỔN ĐỊNH: Không phát hiện Data Drift (PSI < 0.1). Mô hình hiện tại vẫn chính xác.")
 
     if z_score > 2.58:
-        logger.warning("⚠️ CẢNH BÁO: Trị giá trung bình doanh thu đã biến động đáng kể (Z-Score > 2.58).")
+        logger.warning("❌ CẢNH BÁO: Trị giá trung bình doanh thu đã biến động đáng kể (Z-Score > 2.58).")
+        drift_detected = True
 
     if drift_detected:
         logger.info("➜ ĐỀ XUẤT: Kích hoạt luồng Retrain (Huấn luyện lại) mô hình LightGBM tự động.")
