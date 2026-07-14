@@ -114,7 +114,11 @@ def run_lightgbm_grid(df: pd.DataFrame) -> tuple[dict, dict, float]:
                 mlflow.log_metric("rmse", result["rmse"])
                 mlflow.log_metric("mae",  result["mae"])
                 mlflow.lightgbm.log_model(result["model"],  artifact_path="model")
-                mlflow.sklearn.log_model(result["scaler"], artifact_path="scaler")
+                mlflow.sklearn.log_model(
+                    result["scaler"], 
+                    artifact_path="scaler",
+                    serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE
+                )
                 logger.info(f"      → RMSE={result['rmse']:,.2f}  MAE={result['mae']:,.2f}")
                 if result["rmse"] < best_rmse:
                     best_rmse, best_cfg, best_result = result["rmse"], cfg, result
