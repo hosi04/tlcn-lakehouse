@@ -13,16 +13,17 @@ TRINO_HOST = os.getenv("TRINO_HOST", "localhost")
 TRINO_PORT = int(os.getenv("TRINO_PORT", "8085"))
 TRINO_USER = os.getenv("TRINO_USER", "admin")
 
-# Tables fed by streaming / high-frequency micro-batches accumulate small
-# files and snapshots much faster than the batch-loaded tables below, so
-# they are compacted on a short, threshold-checked schedule instead of the
-# fixed weekly sweep.
+# Bronze is the only table fed by continuous Kafka streaming, so it
+# accumulates small files and snapshots fast enough to need a short,
+# threshold-checked compaction cadence.
 STREAMING_TABLES = [
     "iceberg.bronze.olist_events",
-    "iceberg.silver.events",
 ]
 
+# Silver and Gold are written by the batch ETL DAG, so they fragment far
+# more slowly and share a less frequent (every-3-days) maintenance sweep.
 BATCH_TABLES = [
+    "iceberg.silver.events",
     "iceberg.gold.fact_order",
     "iceberg.gold.fact_order_item",
     "iceberg.gold.dim_customer",
