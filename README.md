@@ -166,19 +166,16 @@ Dự án đi kèm bộ thực nghiệm tự động hóa (`experiments/run_all.p
 Hệ thống tích hợp sẵn 3 Bảng điều khiển phân tích chuyên sâu trên **Apache Superset** kết nối trực tiếp với các bảng Data Mart tầng Gold trên **Trino / Iceberg**:
 
 ### 1. Strategic Growth Dashboard (Dashboard Chiến lược Tăng trưởng & Doanh thu)
-> 📸 **[GỢI Ý HÌNH ẢNH 6: DASHBOARD CHIẾN LƯỢC TĂNG TRƯỞNG]**  
-> *Ảnh chụp màn hình Apache Superset BI Dashboard thể hiện chỉ số tăng trưởng doanh thu (MoM/YoY), Giá trị trung bình đơn hàng (AOV), Phân bổ doanh số theo vùng địa lý và Kết quả dự báo doanh thu từ mô hình MLOps (Prophet/LightGBM).*  
-> `![Strategic Growth Dashboard](docs/images/dashboard_strategic_growth.png)`
+<img width="1865" height="1000" alt="strategic-business-growth-2026-06-27T07-45-50 738Z" src="https://github.com/user-attachments/assets/0100afb8-5635-40c5-b319-0d9d0d4fe758" />
+
 
 ### 2. Operations Optimization Dashboard (Dashboard Tối ưu hóa Vận hành & Giao hàng)
-> 📸 **[GỢI Ý HÌNH ẢNH 7: DASHBOARD TỐI ƯU HÓA VẬN HÀNH]**  
-> *Ảnh chụp màn hình Apache Superset BI Dashboard đo lường thời gian giao hàng thực tế vs dự kiến (Delivery Lead Time & Delay Rate), Hiệu năng SLA người bán (Seller Performance), Tỷ lệ hoàn hủy đơn và Chi phí vận chuyển.*  
-> `![Operations Optimization Dashboard](docs/images/dashboard_operations_optimization.png)`
+<img width="1865" height="1144" alt="operational-excellence-2026-06-27T07-46-06 454Z" src="https://github.com/user-attachments/assets/4fffad95-bb9f-4410-be1d-face79808fe6" />
+
 
 ### 3. User Behavior & Funnel Analytics Dashboard (Dashboard Hành vi Người dùng & Phễu Chuyển đổi)
-> 📸 **[GỢI Ý HÌNH ẢNH 8: DASHBOARD HÀNH VI NGƯỜI DÙNG]**  
-> *Ảnh chụp màn hình Apache Superset BI Dashboard thể hiện luồng sự kiện thời gian thực (Kafka/Spark Streaming), Phễu chuyển đổi thương mại điện tử (Search -> View -> Add to Cart -> Purchase), Phân nhóm khách hàng RFM và Tỷ lệ quay lại (Retention).*  
-> `![User Behavior & Funnel Analytics Dashboard](docs/images/dashboard_user_behavior.png)`
+<img width="1599" height="919" alt="width_1600" src="https://github.com/user-attachments/assets/152d06c9-4d20-4906-9a96-cdbd7970a9d1" />
+
 
 ---
 
@@ -340,11 +337,7 @@ tlcn-lakehouse/
 <a id="author"></a>
 ## 👨‍💻 Tác giả & Liên hệ (Author)
 
-* **Họ và tên**: [Tên của bạn]
-* **Vị trí Ứng tuyển**: Data Engineer / Data Architect / MLOps Engineer / AI Engineer
-* **Email**: [Email của bạn]
-* **LinkedIn**: [Link LinkedIn của bạn]
-* **GitHub**: [Link GitHub Profile của bạn]
+* **Họ và tên**: Thắng_Thành_Nhân
 
 ---
 *⭐ Nếu bạn thấy dự án này hữu ích hoặc ấn tượng, hãy dành tặng dự án 1 Star trên GitHub nhé!*
