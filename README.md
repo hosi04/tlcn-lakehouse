@@ -38,7 +38,8 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ## 🏛️ Kiến trúc Tổng thể Hệ thống (System Architecture)
 
-<img width="4189" height="2971" alt="Kien truc (1)" src="https://github.com/user-attachments/assets/01638cc0-03b5-4fb2-a757-ce58fe418212" />
+<img width="5195" height="2426" alt="Kien truc (2)" src="https://github.com/user-attachments/assets/766f8aff-1ad6-42bd-97d9-c5147645a594" />
+
 
 
 ---
