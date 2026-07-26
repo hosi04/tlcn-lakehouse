@@ -1,28 +1,30 @@
 # 🚀 Enterprise Data Lakehouse & MLOps Platform with Self-Healing Agentic AI (NL2SQL)
 
-[![Data Engineering](https://img.shields.io/badge/Data_Engineering-Medallion_Architecture-blue.svg)](#-1-trụ-cột-data-engineering--lakehouse-infrastructure)
-[![AI Agent](https://img.shields.io/badge/AI_Agent-LangGraph_Multi--Agent-orange.svg)](#-2-trụ-cột-agentic-ai--advanced-nl2sql-engine)
-[![MLOps](https://img.shields.io/badge/MLOps-MLflow_%26_Drift_Monitoring-green.svg)](#-3-trụ-cột-mlops--revenue-forecasting-platform)
-[![NL2SQL Accuracy](https://img.shields.io/badge/NL2SQL_Pass_Rate-93%25-brightgreen.svg)](#-kiểm-chứng-thực-nghiệm--thesis-benchmarks)
+[![Data Engineering](https://img.shields.io/badge/Data_Engineering-Medallion_Architecture-blue.svg)](#data-engineering-infrastructure)
+[![AI Agent](https://img.shields.io/badge/AI_Agent-LangGraph_Multi--Agent-orange.svg)](#agentic-ai-nl2sql)
+[![MLOps](https://img.shields.io/badge/MLOps-MLflow_%26_Drift_Monitoring-green.svg)](#mlops-revenue-forecasting)
+[![NL2SQL Accuracy](https://img.shields.io/badge/NL2SQL_Pass_Rate-93%25-brightgreen.svg)](#thesis-benchmarks)
 
 Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp hệ thống **LangGraph Multi-Agent Chatbot AI** có khả năng tự sửa lỗi (Self-Healing NL2SQL), phục vụ phân tích dữ liệu lớn và dự báo doanh thu thời gian thực. Hệ thống áp dụng kiến trúc **Medallion Architecture (Bronze - Silver - Gold)** chuẩn doanh nghiệp, tối ưu hoá với **Apache Iceberg**, **Trino**, **Apache Airflow**, **MLflow** và **Kafka Streaming**.
 
 ---
 
 ## 📌 Mục lục
-- [🌟 Điểm nổi bật của Dự án (Executive Highlights)](#-điểm-nổi-bật-của-dự-án-executive-highlights)
-- [🏛️ Kiến trúc Tổng thể Hệ thống (System Architecture)](#️-kiến-trúc-tổng-thể-hệ-thống-system-architecture)
-- [💻 Công nghệ Sử dụng (Tech Stack)](#-công-nghệ-sử-dụng-tech-stack)
-- [🗄️ 1. Trụ cột Data Engineering & Lakehouse Infrastructure](#️-1-trụ-cột-data-engineering--lakehouse-infrastructure)
-- [🤖 2. Trụ cột Agentic AI & Advanced NL2SQL Engine](#-2-trụ-cột-agentic-ai--advanced-nl2sql-engine)
-- [📈 3. Trụ cột MLOps & Revenue Forecasting Platform](#-3-trụ-cột-mlops--revenue-forecasting-platform)
-- [📊 Kiểm chứng Thực nghiệm & Thesis Benchmarks](#-kiểm-chứng-thực-nghiệm--thesis-benchmarks)
-- [🌐 Các Dịch vụ & Cổng Truy cập (Services & Ports)](#-các-dịch-vụ--cổng-truy-cập-services--ports)
-- [🚀 Hướng dẫn Cài đặt và Vận hành (Deployment Guide)](#-hướng-dẫn-cài-đặt-và-vận-hành-deployment-guide)
-- [📂 Cấu trúc Thư mục Dự án (Project Structure)](#-cấu-trúc-thư-mục-dự-án-project-structure)
+- [🌟 Điểm nổi bật của Dự án (Executive Highlights)](#executive-highlights)
+- [🏛️ Kiến trúc Tổng thể Hệ thống (System Architecture)](#system-architecture)
+- [💻 Công nghệ Sử dụng (Tech Stack)](#tech-stack)
+- [🗄️ 1. Trụ cột Data Engineering & Lakehouse Infrastructure](#data-engineering-infrastructure)
+- [🤖 2. Trụ cột Agentic AI & Advanced NL2SQL Engine](#agentic-ai-nl2sql)
+- [📈 3. Trụ cột MLOps & Revenue Forecasting Platform](#mlops-revenue-forecasting)
+- [📊 Kiểm chứng Thực nghiệm & Thesis Benchmarks](#thesis-benchmarks)
+- [🖼️ Trực quan hóa 3 Bảng Điều khiển BI Dashboards](#bi-dashboards)
+- [🌐 Các Dịch vụ & Cổng Truy cập (Services & Ports)](#services-and-ports)
+- [🚀 Hướng dẫn Cài đặt và Vận hành (Deployment Guide)](#deployment-guide)
+- [📂 Cấu trúc Thư mục Dự án (Project Structure)](#project-structure)
 
 ---
 
+<a id="executive-highlights"></a>
 ## 🌟 Điểm nổi bật của Dự án (Executive Highlights)
 
 * **Enterprise Medallion Lakehouse**: Xử lý hoàn chỉnh luồng Batch (Olist E-Commerce Dataset) và Streaming (Kafka Real-time User Events) trên 3 tầng Bronze (Raw Parquet), Silver (Rule-based Cleansing via PySpark & MERGE), Gold (Star-Schema Analytics Tables).
@@ -36,6 +38,7 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ---
 
+<a id="system-architecture"></a>
 ## 🏛️ Kiến trúc Tổng thể Hệ thống (System Architecture)
 
 <img width="5195" height="2426" alt="Kien truc (2)" src="https://github.com/user-attachments/assets/766f8aff-1ad6-42bd-97d9-c5147645a594" />
@@ -44,6 +47,7 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ---
 
+<a id="tech-stack"></a>
 ## 💻 Công nghệ Sử dụng (Tech Stack)
 
 | Phân khu | Công nghệ / Thư viện | Vai trò trong hệ thống |
@@ -58,6 +62,7 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ---
 
+<a id="data-engineering-infrastructure"></a>
 ## 🗄️ 1. Trụ cột Data Engineering & Lakehouse Infrastructure
 
 <img width="1507" height="326" alt="image" src="https://github.com/user-attachments/assets/fe848025-d327-4877-837e-49942caf060f" />
@@ -84,6 +89,7 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ---
 
+<a id="agentic-ai-nl2sql"></a>
 ## 🤖 2. Trụ cột Agentic AI & Advanced NL2SQL Engine
 
 <img width="4189" height="2971" alt="Kien truc Chatbot" src="https://github.com/user-attachments/assets/f3910725-e6db-4258-ad7b-e58afb066226" />
@@ -102,6 +108,7 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ---
 
+<a id="mlops-revenue-forecasting"></a>
 ## 📈 3. Trụ cột MLOps & Revenue Forecasting Platform
 
 <img width="1482" height="671" alt="Screenshot 2026-06-27 182128" src="https://github.com/user-attachments/assets/e5370a4f-4982-4753-aae2-c1a68c11a164" />
@@ -125,6 +132,7 @@ Hệ thống thử nghiệm và so sánh đồng thời 3 kiến trúc mô hình
 
 ---
 
+<a id="thesis-benchmarks"></a>
 ## 📊 Kiểm chứng Thực nghiệm & Thesis Benchmarks
 
 Dự án đi kèm bộ thực nghiệm tự động hóa (`experiments/run_all.py`) để kiểm chứng năng lực của hệ thống theo tiêu chuẩn nghiên cứu khoa học và sản phẩm doanh nghiệp:
@@ -152,6 +160,29 @@ Dự án đi kèm bộ thực nghiệm tự động hóa (`experiments/run_all.p
 
 ---
 
+<a id="bi-dashboards"></a>
+## 🖼️ Trực quan hóa 3 Bảng Điều khiển Business Intelligence (BI Dashboards)
+
+Hệ thống tích hợp sẵn 3 Bảng điều khiển phân tích chuyên sâu trên **Apache Superset** kết nối trực tiếp với các bảng Data Mart tầng Gold trên **Trino / Iceberg**:
+
+### 1. Strategic Growth Dashboard (Dashboard Chiến lược Tăng trưởng & Doanh thu)
+> 📸 **[GỢI Ý HÌNH ẢNH 6: DASHBOARD CHIẾN LƯỢC TĂNG TRƯỞNG]**  
+> *Ảnh chụp màn hình Apache Superset BI Dashboard thể hiện chỉ số tăng trưởng doanh thu (MoM/YoY), Giá trị trung bình đơn hàng (AOV), Phân bổ doanh số theo vùng địa lý và Kết quả dự báo doanh thu từ mô hình MLOps (Prophet/LightGBM).*  
+> `![Strategic Growth Dashboard](docs/images/dashboard_strategic_growth.png)`
+
+### 2. Operations Optimization Dashboard (Dashboard Tối ưu hóa Vận hành & Giao hàng)
+> 📸 **[GỢI Ý HÌNH ẢNH 7: DASHBOARD TỐI ƯU HÓA VẬN HÀNH]**  
+> *Ảnh chụp màn hình Apache Superset BI Dashboard đo lường thời gian giao hàng thực tế vs dự kiến (Delivery Lead Time & Delay Rate), Hiệu năng SLA người bán (Seller Performance), Tỷ lệ hoàn hủy đơn và Chi phí vận chuyển.*  
+> `![Operations Optimization Dashboard](docs/images/dashboard_operations_optimization.png)`
+
+### 3. User Behavior & Funnel Analytics Dashboard (Dashboard Hành vi Người dùng & Phễu Chuyển đổi)
+> 📸 **[GỢI Ý HÌNH ẢNH 8: DASHBOARD HÀNH VI NGƯỜI DÙNG]**  
+> *Ảnh chụp màn hình Apache Superset BI Dashboard thể hiện luồng sự kiện thời gian thực (Kafka/Spark Streaming), Phễu chuyển đổi thương mại điện tử (Search -> View -> Add to Cart -> Purchase), Phân nhóm khách hàng RFM và Tỷ lệ quay lại (Retention).*  
+> `![User Behavior & Funnel Analytics Dashboard](docs/images/dashboard_user_behavior.png)`
+
+---
+
+<a id="services-and-ports"></a>
 ## 🌐 Các Dịch vụ & Cổng Truy cập (Services & Ports)
 
 Sau khi khởi động toàn bộ hạ tầng bằng Docker, bạn có thể truy cập các bảng điều khiển quản trị qua Web Browser:
@@ -170,6 +201,7 @@ Sau khi khởi động toàn bộ hạ tầng bằng Docker, bạn có thể tru
 
 ---
 
+<a id="deployment-guide"></a>
 ## 🚀 Hướng dẫn Cài đặt và Vận hành (Deployment Guide)
 
 ### Yêu cầu Tiền đề (Prerequisites)
@@ -259,6 +291,7 @@ python -m experiments.run_all
 
 ---
 
+<a id="project-structure"></a>
 ## 📂 Cấu trúc Thư mục Dự án (Project Structure)
 
 ```text
@@ -304,6 +337,7 @@ tlcn-lakehouse/
 
 ---
 
+<a id="author"></a>
 ## 👨‍💻 Tác giả & Liên hệ (Author)
 
 * **Họ và tên**: [Tên của bạn]
