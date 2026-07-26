@@ -38,51 +38,8 @@ Dự án Nền tảng **Enterprise Data Lakehouse & MLOps Platform** kết hợp
 
 ## 🏛️ Kiến trúc Tổng thể Hệ thống (System Architecture)
 
-> 📸 **[GỢI Ý HÌNH ẢNH 1: SƠ ĐỒ KIẾN TRÚC TỔNG THỂ]**  
-> *Hãy chèn hình ảnh sơ đồ tổng thể hệ thống (Infrastructure, Data Pipeline, Multi-Agent Flow, MLOps) tại đây.*  
-> `![System Architecture Overview](docs/images/architecture_diagram.png)`
+<img width="4189" height="2971" alt="Kien truc (1)" src="https://github.com/user-attachments/assets/01638cc0-03b5-4fb2-a757-ce58fe418212" />
 
-Hệ thống được thiết kế theo mô hình 3 trụ cột độc lập nhưng gắn kết chặt chẽ:
-
-```mermaid
-graph TD
-    subgraph Data_Sources["Data Sources"]
-        A1[Olist E-Commerce Batch CSV]
-        A2[Kafka User Event Stream]
-    end
-
-    subgraph Data_Engineering["1. Data Lakehouse Infrastructure (Medallion)"]
-        B1[Spark Batch ETL / Streaming Ingestion] --> Bronze[(Bronze Layer - MinIO Raw)]
-        Bronze --> B2[PySpark Rule Engine Cleansing]
-        B2 --> Silver[(Silver Layer - Iceberg Standardized)]
-        Silver --> B3[PySpark Star-Schema Aggregation]
-        B3 --> Gold[(Gold Layer - Iceberg Data Mart)]
-        Gold <--> Trino[Trino Query Engine]
-        Hive[Hive Metastore + PostgreSQL] <--> Gold
-        Airflow[Apache Airflow Orchestration] --> B1
-        Airflow --> Maintenance[Iceberg Compaction & Vacuum]
-    end
-
-    subgraph AI_Agent["2. Agentic AI & Advanced NL2SQL Engine"]
-        Streamlit[Streamlit UI] <--> FastAPI_Chat[FastAPI Backend]
-        FastAPI_Chat <--> LangGraph[LangGraph Multi-Agent Orchestrator]
-        LangGraph --> Sup[Supervisor Agent Guardrails]
-        Sup --> Ret[Retrieval Agent + ChromaDB + Reranker]
-        Ret --> SQL[SQL Agent + Self-Healing Loop]
-        SQL <--> Trino
-        SQL --> Analyst[Analyst Agent + Plotly Chart]
-    end
-
-    subgraph MLOps_Platform["3. MLOps Revenue Forecasting Platform"]
-        Gold --> Drift[Data Drift Monitor - PSI / Z-Score]
-        Drift --> Airflow_Retrain[Airflow Re-training DAG]
-        Airflow_Retrain --> MLflow[MLflow Model Registry & Tracking]
-        MLflow --> Models[LightGBM / Prophet / LSTM]
-        Models --> Serving[FastAPI Serving API]
-        LangGraph --> WhatIf[What-If Simulation Agent]
-        WhatIf <--> Serving
-    end
-```
 
 ---
 
@@ -102,9 +59,8 @@ graph TD
 
 ## 🗄️ 1. Trụ cột Data Engineering & Lakehouse Infrastructure
 
-> 📸 **[GỢI Ý HÌNH ẢNH 2: GIAO DIỆN MINIO & BẢNG ICEBERG IN TRINO]**  
-> *Chèn hình ảnh chụp từ MinIO Console thể hiện cấu trúc Bucket `iceberg/` (Bronze, Silver, Gold) hoặc giao diện Trino UI.*  
-> `![Data Lakehouse MinIO Storage](docs/images/lakehouse_minio_trino.png)`
+<img width="1507" height="326" alt="image" src="https://github.com/user-attachments/assets/fe848025-d327-4877-837e-49942caf060f" />
+
 
 ### 1.1 Medallion Architecture (Bronze -> Silver -> Gold)
 1. **Bronze Layer (Raw Storage)**:
@@ -129,29 +85,7 @@ graph TD
 
 ## 🤖 2. Trụ cột Agentic AI & Advanced NL2SQL Engine
 
-> 📸 **[GỢI Ý HÌNH ẢNH 3: SƠ ĐỒ LANGGRAPH AGENT WORKFLOW & UI STREAMLIT]**  
-> *Chèn ảnh chụp màn hình giao diện Streamlit Chatbot đang phản hồi câu hỏi phân tích dữ liệu cùng đồ thị Plotly.*  
-> `![Streamlit Chatbot UI](docs/images/chatbot_ui_demo.png)`
-
-### 2.1 Luồng hoạt động Multi-Agent (LangGraph Orchestration)
-
-Hệ thống phân tách các tác vụ xử lý thông minh thành 5 nút (Nodes/Agents) chạy trong đồ hình trạng thái (StateGraph):
-
-```
-User Query ---> [Supervisor Agent] ───(Guardrails Check)───> Valid Query?
-                       │                                         │
-                       ├─ Off-topic / Violation ──> Direct Refusal
-                       │
-                       ├─ Data Query ──> [Retrieval Agent]
-                       │                       │
-                       │                       ▼ (ChromaDB + Reranker + Pruner)
-                       │                 [SQL Agent] <─── Self-Healing Loop (Max 3 Retries)
-                       │                       │
-                       │                       ▼ (Trino Execution OK)
-                       │                 [Analyst Agent] ──> Plotly Chart & Insights
-                       │
-                       └─ Simulation ──> [What-If Agent] ──> MLOps Model Inference
-```
+<img width="4189" height="2971" alt="Kien truc Chatbot" src="https://github.com/user-attachments/assets/f3910725-e6db-4258-ad7b-e58afb066226" />
 
 1. **Supervisor Agent (Security & Routing)**: Phân loại ý định (`data_query`, `what_if_simulation`, `off_topic`) và kiểm tra AI Guardrails (chống SQL Injection `DROP`, `DELETE`, `TRUNCATE`, ngăn chặn Prompt Injection).
 2. **Retrieval Agent (Advanced RAG)**:
@@ -169,9 +103,8 @@ User Query ---> [Supervisor Agent] ───(Guardrails Check)───> Valid Q
 
 ## 📈 3. Trụ cột MLOps & Revenue Forecasting Platform
 
-> 📸 **[GỢI Ý HÌNH ẢNH 4: GIAO DIỆN MLFLOW TRACKING & MODEL COMPARISON]**  
-> *Chèn hình ảnh từ MLflow UI thể hiện danh sách các Runs, metrics RMSE/MAE và Artifacts của LightGBM, Prophet, LSTM.*  
-> `![MLflow Experiment Tracking](docs/images/mlflow_dashboard.png)`
+<img width="1482" height="671" alt="Screenshot 2026-06-27 182128" src="https://github.com/user-attachments/assets/e5370a4f-4982-4753-aae2-c1a68c11a164" />
+
 
 ### 3.1 Vòng đời Huấn luyện & So sánh Mô hình (MLflow Integration)
 Hệ thống thử nghiệm và so sánh đồng thời 3 kiến trúc mô hình dự báo doanh thu chuỗi thời gian (Daily/Weekly Revenue):
@@ -195,9 +128,8 @@ Hệ thống thử nghiệm và so sánh đồng thời 3 kiến trúc mô hình
 
 Dự án đi kèm bộ thực nghiệm tự động hóa (`experiments/run_all.py`) để kiểm chứng năng lực của hệ thống theo tiêu chuẩn nghiên cứu khoa học và sản phẩm doanh nghiệp:
 
-> 📸 **[GỢI Ý HÌNH ẢNH 5: KẾT QUẢ BENCHMARK NL2SQL]**  
-> *Chèn hình ảnh biểu đồ Pass Rate theo độ khó câu hỏi (Easy, Medium, Hard) hoặc ảnh chụp màn hình Terminal chạy `experiments/run_all.py`.*  
-> `![NL2SQL Benchmark Results](docs/images/benchmark_results.png)`
+<img width="1106" height="700" alt="Screenshot 2026-07-09 163019" src="https://github.com/user-attachments/assets/0194ff47-60a9-47da-90f8-19ffac6fd576" />
+
 
 ### 1. Đánh giá Khả năng sinh SQL (NL2SQL Benchmark - 100 Test Cases)
 
